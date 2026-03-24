@@ -1,0 +1,33 @@
+{
+  "name": "forge-platform",
+  "version": "1.0.0",
+  "description": "Forge - AI-Powered Software Modernization Platform",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\" --names \"API,UI\" --prefix-colors \"magenta,cyan\"",
+    "dev:server": "node --env-file=.env --watch server.js",
+    "dev:client": "vite --port 5173",
+    "build": "vite build",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "framer-motion": "^11.3.0",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.400.0",
+    "marked": "^12.0.0",
+    "mermaid": "^11.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.19",
+    "concurrently": "^8.2.2",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "vite": "^5.3.0"
+  }
+}

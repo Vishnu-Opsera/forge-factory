@@ -1,0 +1,315 @@
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Zap, ArrowLeft, GitBranch, BarChart3, CheckSquare,
+  Clock, Plus, Package, Layers, Settings, Send, Share2,
+} from 'lucide-react';
+import { useALM } from '../../hooks/useALM.js';
+import VersionTimeline from './VersionTimeline.jsx';
+import PRDDiff from './PRDDiff.jsx';
+import StoryTracker from './StoryTracker.jsx';
+import InsightsDashboard from './InsightsDashboard.jsx';
+import BaselinePanel from './BaselinePanel.jsx';
+import SettingsPanel from './SettingsPanel.jsx';
+import ApprovalsPanel from './ApprovalsPanel.jsx';
+import ShareModal from '../ShareModal.jsx';
+
+// Artifact viewer — shows PRD/architecture/tasks from a stored version
+import { lazy, Suspense } from 'react';
+const PRDTab = lazy(() => import('../Results/PRDTab.jsx'));
+const ArchitectureTab = lazy(() => import('../Results/ArchitectureTab.jsx'));
+const TasksTab = lazy(() => import('../Results/TasksTab.jsx'));
+
+// Project-level tabs
+const PROJECT_TABS = [
+  { id: 'timeline',  label: 'Timeline',  icon: Clock },
+  { id: 'features',  label: 'Features',  icon: GitBranch },
+  { id: 'stories',   label: 'Stories',   icon: CheckSquare },
+  { id: 'insights',  label: 'Insights',  icon: BarChart3 },
+  { id: 'baseline',  label: 'Baseline',  icon: Layers },
+  { id: 'approvals', label: 'Approvals', icon: Send },
+];
+
+// Global (sidebar-level) sections
+const GLOBAL_SECTIONS = [
+  { id: 'alm',      label: 'ALM',      icon: Package },
+  { id: 'insights', label: 'Insights', icon: BarChart3 },
+  { id: 'settings', label: 'Settings', icon: Settings },
+];
+
+function ArtifactViewer({ version, artifact, onClose }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-40 bg-forge-bg/95 overflow-y-auto"
+      style={{ backdropFilter: 'blur(4px)' }}
+    >
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        <div className="flex items-center gap-3 mb-6">
+          <button onClick={onClose} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors btn-secondary py-2 px-4 text-sm">
+            <ArrowLeft className="w-4 h-4" /> Back to ALM
+          </button>
+          <span className="text-slate-600">→</span>
+          <span className="text-white font-semibold capitalize">{artifact} — v{version.semver}</span>
+        </div>
+        <Suspense fallback={<div className="text-slate-600 text-sm">Loading artifact...</div>}>
+          {artifact === 'prd' && <PRDTab prd={version.artifacts?.prd} />}
+          {artifact === 'architecture' && <ArchitectureTab data={version.artifacts?.architecture} />}
+          {artifact === 'tasks' && <TasksTab data={version.artifacts?.tasks} />}
+        </Suspense>
+      </div>
+    </motion.div>
+  );
+}
+
+function ProjectSelector({ projects, activeId, onChange }) {
+  if (projects.length === 0) return (
+    <div className="text-xs text-slate-600 py-2">No projects yet. Save a Forge result to ALM.</div>
+  );
+  return (
+    <div className="space-y-1">
+      {projects.map(p => (
+        <button
+          key={p.id}
+          onClick={() => onChange(p.id)}
+          className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all ${
+            p.id === activeId
+              ? 'bg-forge-purple/15 border border-forge-purple/30 text-white'
+              : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
+          }`}
+        >
+          <div className="font-semibold truncate">{p.name}</div>
+          <div className="text-xs opacity-60 mt-0.5">{p.versions.length} version{p.versions.length !== 1 ? 's' : ''} · {new Date(p.updated_at).toLocaleDateString()}</div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export default function ALMDashboard({ onBack, onNewForge, onStartFromBaseline }) {
+  const { projects, activeProject, activeProjectId, setActiveProjectId, versions, insights, updateStory, updateLinks, removeProject } = useALM();
+  const [section, setSection] = useState('alm'); // alm | insights | settings
+  const [activeTab, setActiveTab] = useState('timeline');
+  const [selectedVersionId, setSelectedVersionId] = useState(versions[versions.length - 1]?.id || null);
+  const [artifactView, setArtifactView] = useState(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+
+  const handleViewArtifact = (version, artifact) => setArtifactView({ version, artifact });
+  const handleUpdateLinks = (versionId, links) => updateLinks(versionId, links);
+
+  return (
+    <>
+      <AnimatePresence>
+        {artifactView && (
+          <ArtifactViewer
+            version={artifactView.version}
+            artifact={artifactView.artifact}
+            onClose={() => setArtifactView(null)}
+          />
+        )}
+        {shareModalOpen && activeProject && (
+          <ShareModal
+            projectId={activeProjectId}
+            projectName={activeProject.name}
+            onClose={() => setShareModalOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <div className="min-h-screen flex flex-col">
+        {/* Top nav */}
+        <nav className="flex items-center justify-between px-8 py-4 border-b border-slate-800/50 flex-shrink-0">
+          <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm">
+            <ArrowLeft className="w-4 h-4" />Back
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-forge-purple to-forge-cyan flex items-center justify-center">
+              <Zap className="w-3.5 h-3.5 text-white" />
+            </div>
+            <span className="font-bold tracking-tight">FORGE</span>
+            <span className="ml-1 text-xs font-mono text-forge-cyan bg-forge-cyan/10 border border-forge-cyan/20 px-2 py-0.5 rounded-full">ALM</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {activeProject && (
+              <button
+                onClick={() => setShareModalOpen(true)}
+                className="btn-secondary text-sm py-2 px-3 flex items-center gap-1.5"
+              >
+                <Share2 className="w-3.5 h-3.5" /> Share
+              </button>
+            )}
+            <button onClick={onNewForge} className="btn-primary text-sm py-2 px-4 flex items-center gap-1.5">
+              <Plus className="w-4 h-4" />New Forge
+            </button>
+          </div>
+        </nav>
+
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left sidebar */}
+          <aside className="w-56 flex-shrink-0 border-r border-slate-800/50 flex flex-col overflow-y-auto">
+            {/* Global section nav */}
+            <div className="p-3 border-b border-slate-800/50">
+              {GLOBAL_SECTIONS.map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => setSection(s.id)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                    section === s.id
+                      ? 'bg-forge-purple/15 text-white border border-forge-purple/30'
+                      : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
+                  }`}
+                >
+                  <s.icon className="w-4 h-4" />
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Project list — shown in ALM section */}
+            {section === 'alm' && (
+              <div className="p-3 flex-1">
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Package className="w-3 h-3" />Projects
+                </div>
+                <ProjectSelector
+                  projects={projects}
+                  activeId={activeProjectId}
+                  onChange={(id) => { setActiveProjectId(id); setActiveTab('timeline'); }}
+                />
+                {activeProject && insights && (
+                  <div className="mt-4 pt-4 border-t border-slate-800/50 space-y-1 text-xs">
+                    <div className="text-slate-600">Created {new Date(activeProject.created_at).toLocaleDateString()}</div>
+                    <div className="text-slate-600">{versions.length} version{versions.length !== 1 ? 's' : ''}</div>
+                    <div className="text-forge-purple">{insights.totalFeatures} features</div>
+                    <div className="text-forge-emerald">{insights.completedStories}/{insights.totalStories} stories done</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </aside>
+
+          {/* Main content */}
+          <main className="flex-1 overflow-y-auto">
+            <AnimatePresence mode="wait">
+              {/* ── Settings section ── */}
+              {section === 'settings' && (
+                <motion.div key="settings" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-6">
+                  <div className="mb-6">
+                    <h1 className="text-2xl font-black text-white mb-1">Settings</h1>
+                    <div className="text-sm text-slate-500">Authentication, sharing, and app configuration</div>
+                  </div>
+                  <SettingsPanel />
+                </motion.div>
+              )}
+
+              {/* ── Insights section ── */}
+              {section === 'insights' && (
+                <motion.div key="insights-global" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-6">
+                  <div className="mb-6">
+                    <h1 className="text-2xl font-black text-white mb-1">Insights</h1>
+                    <div className="text-sm text-slate-500">Cross-version metrics and trends</div>
+                  </div>
+                  {!activeProject ? (
+                    <div className="text-center py-16 text-slate-600 text-sm">Select a project to see insights.</div>
+                  ) : (
+                    <InsightsDashboard insights={insights} versions={versions} />
+                  )}
+                </motion.div>
+              )}
+
+              {/* ── ALM section ── */}
+              {section === 'alm' && (
+                <motion.div key="alm" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                  {!activeProject ? (
+                    <div className="flex flex-col items-center justify-center h-full min-h-[60vh] text-center p-8">
+                      <div className="text-5xl mb-4">🏗️</div>
+                      <div className="text-xl font-bold text-white mb-2">No Projects Yet</div>
+                      <p className="text-slate-500 mb-6 max-w-sm">Forge a product and save it to ALM to start tracking versions, features, and stories.</p>
+                      <button onClick={onNewForge} className="btn-primary py-3 px-8 flex items-center gap-2">
+                        <Zap className="w-4 h-4" />Start Forging
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-6">
+                      {/* Project header */}
+                      <div className="mb-6 flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-3 mb-1">
+                            <h1 className="text-2xl font-black text-white">{activeProject.name}</h1>
+                            {versions.length > 0 && (
+                              <span className="text-xs font-mono font-bold text-forge-purple bg-forge-purple/10 border border-forge-purple/20 px-2 py-0.5 rounded-full">
+                                v{versions[versions.length - 1].semver}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-slate-500">
+                            {versions.length} version{versions.length !== 1 ? 's' : ''} · Updated {new Date(activeProject.updated_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tabs */}
+                      <div className="flex flex-wrap gap-1 mb-6">
+                        {PROJECT_TABS.map((tab) => (
+                          <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
+                              activeTab === tab.id ? 'tab-active' : 'text-slate-500 border-transparent hover:text-slate-300 hover:bg-slate-800/50'
+                            }`}
+                          >
+                            <tab.icon className="w-4 h-4" />
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Tab content */}
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={activeTab}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {activeTab === 'timeline' && (
+                            <VersionTimeline
+                              versions={versions}
+                              selectedVersionId={selectedVersionId}
+                              onSelectVersion={setSelectedVersionId}
+                              onViewArtifact={handleViewArtifact}
+                              onUpdateLinks={handleUpdateLinks}
+                            />
+                          )}
+                          {activeTab === 'features' && <PRDDiff versions={versions} />}
+                          {activeTab === 'stories' && (
+                            <StoryTracker
+                              versions={versions}
+                              onStatusChange={(versionId, storyId, status) => updateStory(versionId, storyId, status)}
+                            />
+                          )}
+                          {activeTab === 'insights' && <InsightsDashboard insights={insights} versions={versions} />}
+                          {activeTab === 'baseline' && <BaselinePanel onStartFromBaseline={onStartFromBaseline} />}
+                          {activeTab === 'approvals' && (
+                            <ApprovalsPanel
+                              versions={versions}
+                              projectId={activeProjectId}
+                              projectName={activeProject.name}
+                            />
+                          )}
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </main>
+        </div>
+      </div>
+    </>
+  );
+}
