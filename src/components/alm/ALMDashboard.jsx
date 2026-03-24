@@ -5,6 +5,7 @@ import {
   Clock, Plus, Package, Layers, Settings, Send, Share2,
 } from 'lucide-react';
 import { useALM } from '../../hooks/useALM.js';
+import { getInsights } from '../../store/almStore.js';
 import VersionTimeline from './VersionTimeline.jsx';
 import PRDDiff from './PRDDiff.jsx';
 import StoryTracker from './StoryTracker.jsx';
@@ -64,26 +65,56 @@ function ArtifactViewer({ version, artifact, onClose }) {
   );
 }
 
+function projectCompletion(project) {
+  const insights = getInsights(project);
+  if (!insights || insights.totalStories === 0) return null;
+  const pct = Math.round((insights.completedStories / insights.totalStories) * 100);
+  return { pct, completed: insights.completedStories, total: insights.totalStories };
+}
+
 function ProjectSelector({ projects, activeId, onChange }) {
   if (projects.length === 0) return (
-    <div className="text-xs text-slate-600 py-2">No projects yet. Save a Forge result to ALM.</div>
+    <div className="text-xs text-slate-600 py-2">No forged apps yet. Forge a product to see it here.</div>
   );
   return (
     <div className="space-y-1">
-      {projects.map(p => (
-        <button
-          key={p.id}
-          onClick={() => onChange(p.id)}
-          className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all ${
-            p.id === activeId
-              ? 'bg-forge-purple/15 border border-forge-purple/30 text-white'
-              : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
-          }`}
-        >
-          <div className="font-semibold truncate">{p.name}</div>
-          <div className="text-xs opacity-60 mt-0.5">{p.versions.length} version{p.versions.length !== 1 ? 's' : ''} · {new Date(p.updated_at).toLocaleDateString()}</div>
-        </button>
-      ))}
+      {projects.map(p => {
+        const comp = projectCompletion(p);
+        const isComplete = comp?.pct === 100;
+        return (
+          <button
+            key={p.id}
+            onClick={() => onChange(p.id)}
+            className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all ${
+              p.id === activeId
+                ? 'bg-forge-purple/15 border border-forge-purple/30 text-white'
+                : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-1.5 mb-0.5">
+              <div className="font-semibold truncate flex-1">{p.name}</div>
+              {isComplete && (
+                <span className="text-xs font-mono text-emerald-400 flex-shrink-0">✓ Done</span>
+              )}
+            </div>
+            <div className="text-xs opacity-60">{new Date(p.updated_at).toLocaleDateString()}</div>
+            {comp && (
+              <div className="mt-1.5">
+                <div className="flex items-center justify-between text-xs mb-0.5">
+                  <span className="opacity-50">{comp.completed}/{comp.total} stories</span>
+                  <span className={isComplete ? 'text-emerald-400' : 'opacity-50'}>{comp.pct}%</span>
+                </div>
+                <div className="h-0.5 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${comp.pct}%`, background: isComplete ? '#10b981' : '#8B5CF6' }}
+                  />
+                </div>
+              </div>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -224,9 +255,11 @@ export default function ALMDashboard({ onBack, onNewForge, onStartFromBaseline }
                 <motion.div key="alm" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                   {!activeProject ? (
                     <div className="flex flex-col items-center justify-center h-full min-h-[60vh] text-center p-8">
-                      <div className="text-5xl mb-4">🏗️</div>
-                      <div className="text-xl font-bold text-white mb-2">No Projects Yet</div>
-                      <p className="text-slate-500 mb-6 max-w-sm">Forge a product and save it to ALM to start tracking versions, features, and stories.</p>
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-forge-purple to-forge-cyan flex items-center justify-center mb-4 mx-auto">
+                        <Zap className="w-7 h-7 text-white" />
+                      </div>
+                      <div className="text-xl font-bold text-white mb-2">No Forged Apps Yet</div>
+                      <p className="text-slate-500 mb-6 max-w-sm">Every app you forge will automatically appear here. Start forging to see your history.</p>
                       <button onClick={onNewForge} className="btn-primary py-3 px-8 flex items-center gap-2">
                         <Zap className="w-4 h-4" />Start Forging
                       </button>

@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Zap, CheckCircle2, Circle, Loader2, StopCircle, Send,
-  Trophy, Star, Flame, Target, ChevronDown, ChevronUp, ArrowLeft,
-  AlertCircle, Sparkles,
+  Zap, CheckCircle2, Loader2, StopCircle, Send,
+  Target, ChevronDown, ChevronUp, ArrowLeft,
+  AlertCircle, FileCheck2,
 } from 'lucide-react';
 
 const AGENTS = [
@@ -13,9 +13,7 @@ const AGENTS = [
     icon: '🔮',
     desc: 'Sorting & classifying your idea into requirements',
     color: '#8B5CF6',
-    xp: 250,
     expectedChars: 6000,
-    achievement: { icon: '🎯', label: 'Requirements Locked' },
   },
   {
     key: 'architecture',
@@ -23,9 +21,7 @@ const AGENTS = [
     icon: '⚙️',
     desc: 'Drafting the system blueprint & tech stack',
     color: '#06B6D4',
-    xp: 350,
     expectedChars: 7000,
-    achievement: { icon: '🏛️', label: 'Blueprint Drafted' },
   },
   {
     key: 'prd',
@@ -33,9 +29,7 @@ const AGENTS = [
     icon: '📜',
     desc: 'Publishing production-grade requirement docs',
     color: '#10B981',
-    xp: 400,
     expectedChars: 14000,
-    achievement: { icon: '📋', label: 'Docs Published' },
   },
   {
     key: 'tasks',
@@ -43,77 +37,9 @@ const AGENTS = [
     icon: '⚡',
     desc: 'Grinding requirements into sprint-ready tasks',
     color: '#F59E0B',
-    xp: 300,
     expectedChars: 12000,
-    achievement: { icon: '🚀', label: 'Sprint Ready!' },
   },
 ];
-
-const TOTAL_XP = AGENTS.reduce((sum, a) => sum + a.xp, 0);
-
-function XPBar({ xp, totalXp }) {
-  const pct = Math.min((xp / totalXp) * 100, 100);
-  const level = Math.floor(xp / 300) + 1;
-  return (
-    <div className="flex items-center gap-3">
-      <div className="flex items-center gap-1.5 text-forge-amber">
-        <Star className="w-4 h-4 fill-forge-amber" />
-        <span className="text-sm font-bold">Lv.{level}</span>
-      </div>
-      <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden relative">
-        <motion.div
-          className="h-full rounded-full relative overflow-hidden progress-shimmer"
-          style={{ background: 'linear-gradient(90deg, #8B5CF6, #06B6D4, #10B981)' }}
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-        />
-      </div>
-      <span className="text-xs font-mono text-slate-400">{xp}/{totalXp} XP</span>
-    </div>
-  );
-}
-
-function AchievementToast({ achievement }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8, y: -20, x: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-      exit={{ opacity: 0, scale: 0.8, y: -20 }}
-      className="flex items-center gap-2 bg-forge-amber/10 border border-forge-amber/30 text-forge-amber text-sm font-semibold px-4 py-2 rounded-xl shadow-lg"
-    >
-      <Trophy className="w-4 h-4" />
-      <span>{achievement.icon} {achievement.label}</span>
-      <span className="text-xs font-mono ml-1 text-forge-amber/70">+XP</span>
-    </motion.div>
-  );
-}
-
-function Confetti() {
-  const pieces = Array.from({ length: 60 }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    delay: Math.random() * 1.5,
-    duration: 2 + Math.random() * 2,
-    color: ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EC4899'][Math.floor(Math.random() * 5)],
-    size: 4 + Math.random() * 8,
-  }));
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {pieces.map((p) => (
-        <motion.div
-          key={p.id}
-          className="absolute rounded-sm"
-          style={{ left: `${p.x}%`, top: -20, width: p.size, height: p.size, background: p.color }}
-          initial={{ y: -20, rotate: 0, opacity: 1 }}
-          animate={{ y: '110vh', rotate: 720, opacity: [1, 1, 0] }}
-          transition={{ duration: p.duration, delay: p.delay, ease: 'easeIn' }}
-        />
-      ))}
-    </div>
-  );
-}
 
 function AgentCard({ agent, status, streamText, elapsed, isExpanded, onToggle }) {
   const isRunning = status === 'running';
@@ -195,18 +121,8 @@ function AgentCard({ agent, status, streamText, elapsed, isExpanded, onToggle })
           )}
         </div>
 
-        {/* XP badge + expand */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {isDone && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="flex items-center gap-1 text-xs font-bold text-forge-amber bg-forge-amber/10 border border-forge-amber/20 px-2 py-0.5 rounded-full"
-            >
-              <Star className="w-3 h-3 fill-forge-amber" />
-              +{agent.xp}
-            </motion.div>
-          )}
+        {/* Expand toggle */}
+        <div className="flex items-center flex-shrink-0">
           {isDone && streamText && (
             isExpanded ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />
           )}
@@ -255,9 +171,6 @@ export default function AgentPipeline({ input, mode, onComplete, onReset, onBack
     prd: { status: 'pending', text: '', elapsed: null },
     tasks: { status: 'pending', text: '', elapsed: null },
   });
-  const [totalXp, setTotalXp] = useState(0);
-  const [achievements, setAchievements] = useState([]);
-  const [showConfetti, setShowConfetti] = useState(false);
   const [isStopped, setIsStopped] = useState(false);
   const [error, setError] = useState(null);
   const [correction, setCorrection] = useState('');
@@ -266,8 +179,6 @@ export default function AgentPipeline({ input, mode, onComplete, onReset, onBack
   const [expandedAgent, setExpandedAgent] = useState(null);
   const [isDone, setIsDone] = useState(false);
   const [resultsData, setResultsData] = useState(null);
-  const [timeSaved] = useState(() => Math.floor(60 + Math.random() * 120)); // simulated hours saved
-
   const abortRef = useRef(null);
   const resultsRef = useRef(null);
 
@@ -327,21 +238,12 @@ export default function AgentPipeline({ input, mode, onComplete, onReset, onBack
                 },
               }));
             } else if (event.type === 'agent_done') {
-              const agentDef = AGENTS.find((a) => a.key === event.agent);
               updateAgent(event.agent, { status: 'done', elapsed: event.elapsed });
-              setTotalXp((prev) => prev + (agentDef?.xp || 0));
-              if (agentDef?.achievement) {
-                const id = Date.now();
-                setAchievements((prev) => [...prev, { ...agentDef.achievement, id }]);
-                setTimeout(() => setAchievements((prev) => prev.filter((a) => a.id !== id)), 3500);
-              }
             } else if (event.type === 'results') {
               resultsRef.current = event.data;
               setResultsData(event.data);
             } else if (event.type === 'done') {
               setIsDone(true);
-              setShowConfetti(true);
-              setTimeout(() => setShowConfetti(false), 4000);
             } else if (event.type === 'error') {
               setError(event.message);
             }
@@ -401,40 +303,32 @@ export default function AgentPipeline({ input, mode, onComplete, onReset, onBack
         </div>
       </nav>
 
-      {showConfetti && <Confetti />}
-
       <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-8">
-        {/* XP Header */}
+        {/* Progress Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="glass-card p-4 mb-6"
         >
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Flame className="w-5 h-5 text-forge-amber" />
-              <span className="font-bold text-white">Forge Progress</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm">
-              <span className="text-slate-500">
-                {completedCount}/{AGENTS.length} agents
-              </span>
+            <span className="font-semibold text-white text-sm">Processing</span>
+            <div className="flex items-center gap-2 text-sm">
               {currentAgent && (
                 <span className="text-forge-purple font-mono text-xs animate-pulse">
-                  {currentAgent.icon} {currentAgent.name}...
+                  {currentAgent.icon} {currentAgent.name}
                 </span>
               )}
               {isDone && (
-                <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Complete!
+                <span className="text-emerald-400 font-semibold flex items-center gap-1 text-xs">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Complete
                 </span>
               )}
             </div>
           </div>
 
           {/* Overall progress bar */}
-          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden mb-3">
+          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
             <motion.div
               className="h-full rounded-full"
               style={{ background: 'linear-gradient(90deg, #8B5CF6, #06B6D4, #10B981, #F59E0B)' }}
@@ -443,18 +337,7 @@ export default function AgentPipeline({ input, mode, onComplete, onReset, onBack
               transition={{ duration: 0.5, ease: 'easeOut' }}
             />
           </div>
-
-          <XPBar xp={totalXp} totalXp={TOTAL_XP} />
         </motion.div>
-
-        {/* Achievement toasts */}
-        <div className="fixed top-20 right-6 z-40 flex flex-col gap-2">
-          <AnimatePresence>
-            {achievements.map((ach) => (
-              <AchievementToast key={ach.id} achievement={ach} />
-            ))}
-          </AnimatePresence>
-        </div>
 
         {/* Agent cards */}
         <div className="space-y-3 mb-6">
@@ -573,7 +456,7 @@ export default function AgentPipeline({ input, mode, onComplete, onReset, onBack
           >
             <div className="text-amber-400 font-semibold mb-1">Stopped</div>
             <div className="text-sm text-slate-500 mb-3">
-              {completedCount} of {AGENTS.length} agents completed.
+              {completedCount} of {AGENTS.length} steps completed.
             </div>
             <button onClick={onReset} className="btn-secondary text-sm py-2 px-5">
               Start Over
@@ -589,41 +472,25 @@ export default function AgentPipeline({ input, mode, onComplete, onReset, onBack
               animate={{ opacity: 1, y: 0, scale: 1 }}
               className="mt-4 glass-card p-6 border border-emerald-500/30 glow-emerald text-center"
             >
-              <div className="flex justify-center mb-3">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
-                  <Sparkles className="w-8 h-8 text-emerald-400" />
+              <div className="flex justify-center mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-forge-purple to-forge-cyan flex items-center justify-center">
+                  <Zap className="w-7 h-7 text-white" />
                 </div>
               </div>
-              <h3 className="text-xl font-black text-white mb-1">Your product is Forged! 🔥</h3>
-              <p className="text-slate-400 text-sm mb-2">
-                4 AI agents generated your complete product package in seconds.
+              <h3 className="text-lg font-bold text-white mb-1">
+                {mode === 'legacy' ? 'Modernization plan ready.' : 'Ready for development.'}
+              </h3>
+              <p className="text-slate-400 text-sm mb-6">
+                {mode === 'legacy'
+                  ? 'Your refactor roadmap, architecture, and work orders are complete.'
+                  : 'Your product spec, architecture, and sprint backlog are ready to build from.'}
               </p>
-              <p className="text-forge-amber font-bold text-lg mb-5">
-                You just saved ~{timeSaved} hours of work ⚡
-              </p>
-
-              {/* XP Summary */}
-              <div className="flex justify-center gap-6 mb-6">
-                <div className="text-center">
-                  <div className="text-2xl font-black gradient-text">{totalXp}</div>
-                  <div className="text-xs text-slate-500">Total XP</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-black text-emerald-400">{AGENTS.length}</div>
-                  <div className="text-xs text-slate-500">Agents</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-black text-forge-cyan">4</div>
-                  <div className="text-xs text-slate-500">Badges</div>
-                </div>
-              </div>
-
               <button
                 onClick={() => onComplete(resultsData)}
                 className="btn-primary w-full py-3 text-base flex items-center justify-center gap-2"
               >
-                <Trophy className="w-5 h-5" />
-                View Your Results
+                <FileCheck2 className="w-5 h-5" />
+                View Results
               </button>
             </motion.div>
           )}

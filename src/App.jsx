@@ -46,17 +46,10 @@ export default function App() {
     setForgeData(data);
     setPage(PAGES.RESULTS);
 
-    // ── Auto-save to ALM ─────────────────────────────────────────────────
+    // ── Auto-save to ALM — each forge creates its own project ────────────
     try {
-      const projects = loadProjects();
-      let projectId;
-      if (projects.length > 0) {
-        projectId = projects[0].id;
-      } else {
-        const p = createProject(null, data);
-        projectId = p.id;
-      }
-      saveNewVersion(projectId, { ...data, mode }, 'minor', {}, '');
+      const p = createProject(null, data);
+      saveNewVersion(p.id, { ...data, mode }, 'minor', {}, '');
     } catch (e) {
       console.warn('ALM auto-save failed:', e.message);
     }
