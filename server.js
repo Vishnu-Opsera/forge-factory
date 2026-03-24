@@ -1,6 +1,9 @@
 import express from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import cors from 'cors';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { existsSync } from 'fs';
 
 const app = express();
 app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost:4173'] }));
@@ -424,6 +427,17 @@ app.post('/api/analyze-code', async (req, res) => {
 });
 
 app.get('/api/health', (_, res) => res.json({ status: 'ok', model: 'claude-sonnet-4-6' }));
+
+// Serve built frontend in production
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const distPath = join(__dirname, 'dist');
+if (existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res) => {
+    res.sendFile(join(distPath, 'index.html'));
+  });
+}
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

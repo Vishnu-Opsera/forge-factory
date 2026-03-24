@@ -1,0 +1,14 @@
+node_modules
+.git
+.github
+*.md
+*.log
+.env*
+dist
+build
+coverage
+.nyc_output
+__pycache__
+*.pyc
+.pytest_cache
+.opsera-*

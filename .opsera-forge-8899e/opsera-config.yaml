@@ -1,0 +1,16 @@
+apiVersion: opsera.io/v1
+kind: OpseraConfig
+metadata:
+  name: forge-8899e
+spec:
+  tenant: opsera
+  app: forge-8899e
+  environment: dev
+  cloud: aws
+  region: us-west-2
+  cluster: opsera-usw2-np
+  namespace: opsera-forge-8899e-dev
+  branch: vibe-shift
+  domain: forge-8899e.agent.opsera.dev
+  appType: fullstack
+  port: 3001

@@ -1,0 +1,24 @@
+appName: forge-8899e
+namespace: opsera-forge-8899e-dev
+
+image:
+  repository: PLACEHOLDER_ECR_URI
+  tag: latest
+  pullPolicy: Always
+
+port: 3001
+
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "500m"
+
+ingress:
+  host: forge-8899e.agent.opsera.dev
+  className: nginx
+
+secrets:
+  appSecrets: forge-8899e-app-secrets

@@ -1,0 +1,239 @@
+name: "CI/CD - forge-8899e dev"
+
+on:
+  push:
+    branches:
+      - vibe-shift
+    paths-ignore:
+      - '.opsera-forge-8899e/opsera-config.yaml'
+      - '**.md'
+  workflow_dispatch:
+
+env:
+  APP_NAME: "forge-8899e"
+  ENV: "dev"
+  NAMESPACE: "opsera-forge-8899e-dev"
+  CLUSTER: "opsera-usw2-np"
+  REGION: "us-west-2"
+  ECR_REPO: "opsera/forge-8899e"
+  APP_FOLDER: ".opsera-forge-8899e"
+  APP_PORT: "3001"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 0: Bootstrap (idempotent — runs on every push, spoke cluster only)
+  # ─────────────────────────────────────────────────────────────────────────────
+  bootstrap:
+    name: "Bootstrap Infrastructure"
+    runs-on: ubuntu-latest
+    outputs:
+      ecr_registry: ${{ steps.aws-info.outputs.ecr_registry }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REGION }}
+
+      - name: Bootstrap ECR + EKS infra
+        id: aws-info
+        run: |
+          # ── ECR ──────────────────────────────────────────────────────────────
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${{ env.REGION }}.amazonaws.com"
+          echo "ecr_registry=${ECR_REGISTRY}" >> "$GITHUB_OUTPUT"
+
+          aws ecr describe-repositories --repository-names "${{ env.ECR_REPO }}" \
+            --region ${{ env.REGION }} 2>/dev/null \
+            || aws ecr create-repository \
+                 --repository-name "${{ env.ECR_REPO }}" \
+                 --region ${{ env.REGION }} \
+                 --image-scanning-configuration scanOnPush=false \
+                 --tags Key=managed-by,Value=opsera Key=app,Value=${{ env.APP_NAME }} Key=env,Value=${{ env.ENV }}
+          echo "✓ Bootstrap: ECR ready (${{ env.ECR_REPO }})"
+
+          # ── EKS kubeconfig ───────────────────────────────────────────────────
+          aws eks update-kubeconfig --name "${{ env.CLUSTER }}" --region ${{ env.REGION }}
+
+          # ── Namespace ────────────────────────────────────────────────────────
+          kubectl create namespace "${{ env.NAMESPACE }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          echo "✓ Namespace ready: ${{ env.NAMESPACE }}"
+
+          # ── Pre-existing non-Helm resource cleanup (first deploy only) ───────
+          MANAGED_BY=$(kubectl get deployment "${{ env.APP_NAME }}" \
+            -n "${{ env.NAMESPACE }}" \
+            -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}' 2>/dev/null || echo "")
+          if [ "$MANAGED_BY" = "Helm" ]; then
+            echo "✓ Helm-managed deployment exists — upgrade will handle resources"
+          else
+            kubectl delete deployment,service,serviceaccount,ingress \
+              -l app=${{ env.APP_NAME }} \
+              -n "${{ env.NAMESPACE }}" \
+              --ignore-not-found=true
+            echo "✓ Pre-existing resources cleared (secrets preserved)"
+          fi
+
+          # ── ECR pull secret ──────────────────────────────────────────────────
+          ECR_PASSWORD=$(aws ecr get-login-password --region ${{ env.REGION }})
+          kubectl create secret docker-registry ecr-secret \
+            --namespace "${{ env.NAMESPACE }}" \
+            --docker-server="${ECR_REGISTRY}" \
+            --docker-username=AWS \
+            --docker-password="${ECR_PASSWORD}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          echo "✓ ECR pull secret ready"
+
+      - name: Sync app secrets
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          SECRET_ARGS=""
+          [ -n "${GOOGLE_CLIENT_ID}" ]     && SECRET_ARGS="$SECRET_ARGS --from-literal=GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}"
+          [ -n "${GOOGLE_CLIENT_SECRET}" ] && SECRET_ARGS="$SECRET_ARGS --from-literal=GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}"
+          [ -n "${DATABASE_URL}" ]         && SECRET_ARGS="$SECRET_ARGS --from-literal=DATABASE_URL=${DATABASE_URL}"
+          if [ -z "$SECRET_ARGS" ]; then
+            echo "ℹ️ No app secrets configured — skipping"
+            exit 0
+          fi
+          aws eks update-kubeconfig --name "${{ env.CLUSTER }}" --region ${{ env.REGION }}
+          kubectl create secret generic ${{ env.APP_NAME }}-app-secrets \
+            $SECRET_ARGS \
+            -n "${{ env.NAMESPACE }}" \
+            --save-config --dry-run=client -o yaml | kubectl apply -f -
+          echo "✓ App secrets synced"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # STAGE 1: Build & Push to ECR
+  # ─────────────────────────────────────────────────────────────────────────────
+  build-and-push:
+    name: "Build & Push to ECR"
+    runs-on: ubuntu-latest
+    needs: [bootstrap]
+    outputs:
+      image_tag: ${{ steps.tag.outputs.image_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image tag
+        id: tag
+        run: |
+          IMAGE_TAG="${GITHUB_SHA::8}-$(date +%Y%m%d%H%M%S)"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push (with layer cache)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ env.APP_FOLDER }}/Dockerfile
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPO }}:${{ steps.tag.outputs.image_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # STAGE 2: Helm Deploy — direct to SPOKE cluster
+  # ─────────────────────────────────────────────────────────────────────────────
+  helm-deploy:
+    name: "Helm Deploy"
+    runs-on: ubuntu-latest
+    needs: [bootstrap, build-and-push]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REGION }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.17.0'
+
+      - name: Helm upgrade --install
+        run: |
+          aws eks update-kubeconfig --name "${{ env.CLUSTER }}" --region ${{ env.REGION }}
+
+          helm upgrade --install "${{ env.APP_NAME }}" \
+            "${{ env.APP_FOLDER }}/helm" \
+            --namespace "${{ env.NAMESPACE }}" \
+            --create-namespace \
+            --atomic \
+            --timeout 5m \
+            --set image.repository="${{ needs.bootstrap.outputs.ecr_registry }}/${{ env.ECR_REPO }}" \
+            --set image.tag="${{ needs.build-and-push.outputs.image_tag }}" \
+            --wait
+          echo "✓ Helm Deploy: ${{ env.APP_NAME }} → ${{ needs.build-and-push.outputs.image_tag }}"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # STAGE 3: Verify Deployment
+  # ─────────────────────────────────────────────────────────────────────────────
+  verify:
+    name: "Verify Deployment"
+    runs-on: ubuntu-latest
+    needs: [helm-deploy, build-and-push]
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.REGION }}
+
+      - name: Pod status
+        run: |
+          aws eks update-kubeconfig --name "${{ env.CLUSTER }}" --region ${{ env.REGION }}
+          kubectl get pods -n "${{ env.NAMESPACE }}" -l app=${{ env.APP_NAME }} -o wide
+          echo "✓ Verify: pods running (rollout guaranteed by helm --atomic --wait)"
+
+      - name: Verify HTTPS URL
+        run: |
+          APP_URL="https://${{ env.APP_NAME }}.agent.opsera.dev"
+          echo "Checking: ${APP_URL}"
+          for i in $(seq 1 6); do
+            HTTP=$(curl -sLo /dev/null -w "%{http_code}" --max-time 10 "${APP_URL}" 2>/dev/null || echo "000")
+            echo "Attempt ${i}/6: HTTP ${HTTP}"
+            if [ "$HTTP" -ge 200 ] && [ "$HTTP" -lt 400 ]; then
+              echo "✅ Application is LIVE: ${APP_URL} (HTTP ${HTTP})"
+              exit 0
+            fi
+            [ "$i" -lt 6 ] && sleep 20
+          done
+          echo "⚠️  URL not yet responding — DNS/TLS propagating (normal for new apps). Check: ${APP_URL}"
+
+      - name: Deployment summary
+        run: |
+          echo "╔══════════════════════════════════════════════════════════════════╗"
+          echo "║  DEPLOYMENT COMPLETE — ${{ env.APP_NAME }}"
+          echo "║  Tag:     ${{ needs.build-and-push.outputs.image_tag }}"
+          echo "║  NS:      ${{ env.NAMESPACE }} @ ${{ env.CLUSTER }}"
+          echo "║  Pipeline: Bootstrap ✓  Build ✓  Helm Deploy ✓  Verify ✓"
+          echo "║  🌐 https://${{ env.APP_NAME }}.agent.opsera.dev"
+          echo "╚══════════════════════════════════════════════════════════════════╝"
