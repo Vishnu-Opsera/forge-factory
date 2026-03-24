@@ -94,11 +94,13 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{secrets.ANTHROPIC_API_KEY}}
         run: |
           SECRET_ARGS=""
           [ -n "${GOOGLE_CLIENT_ID}" ]     && SECRET_ARGS="$SECRET_ARGS --from-literal=GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}"
           [ -n "${GOOGLE_CLIENT_SECRET}" ] && SECRET_ARGS="$SECRET_ARGS --from-literal=GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}"
           [ -n "${DATABASE_URL}" ]         && SECRET_ARGS="$SECRET_ARGS --from-literal=DATABASE_URL=${DATABASE_URL}"
+          [ -n "${ANTHROPIC_API_KEY}" ]         && SECRET_ARGS="$SECRET_ARGS --from-literal=ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}"
           if [ -z "$SECRET_ARGS" ]; then
             echo "ℹ️ No app secrets configured — skipping"
             exit 0
@@ -129,7 +131,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.REGION }}
-          ANTHROPIC_API_KEY: ${{secrets.ANTHROPIC_API_KEY}}
 
       - name: Login to Amazon ECR
         id: login-ecr
