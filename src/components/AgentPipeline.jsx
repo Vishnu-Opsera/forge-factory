@@ -9,38 +9,42 @@ import {
 const AGENTS = [
   {
     key: 'intent',
-    name: 'Intent Analysis',
-    icon: '🔍',
-    desc: 'Parsing requirements & extracting core concepts',
+    name: 'Triage',
+    icon: '🔮',
+    desc: 'Sorting & classifying your idea into requirements',
     color: '#8B5CF6',
     xp: 250,
+    expectedChars: 6000,
     achievement: { icon: '🎯', label: 'Requirements Locked' },
   },
   {
     key: 'architecture',
-    name: 'Architecture Design',
-    icon: '🏗️',
-    desc: 'Designing system architecture & tech stack',
+    name: 'Drafthouse',
+    icon: '⚙️',
+    desc: 'Drafting the system blueprint & tech stack',
     color: '#06B6D4',
     xp: 350,
-    achievement: { icon: '🏛️', label: 'Blueprint Created' },
+    expectedChars: 7000,
+    achievement: { icon: '🏛️', label: 'Blueprint Drafted' },
   },
   {
     key: 'prd',
-    name: 'PRD Generator',
-    icon: '📄',
-    desc: 'Writing production-grade requirements document',
+    name: 'Press',
+    icon: '📜',
+    desc: 'Publishing production-grade requirement docs',
     color: '#10B981',
     xp: 400,
-    achievement: { icon: '📋', label: 'PRD Published' },
+    expectedChars: 14000,
+    achievement: { icon: '📋', label: 'Docs Published' },
   },
   {
     key: 'tasks',
-    name: 'Task Generator',
-    icon: '✅',
-    desc: 'Creating sprint-ready development tasks',
+    name: 'Mill',
+    icon: '⚡',
+    desc: 'Grinding requirements into sprint-ready tasks',
     color: '#F59E0B',
     xp: 300,
+    expectedChars: 12000,
     achievement: { icon: '🚀', label: 'Sprint Ready!' },
   },
 ];
@@ -116,6 +120,12 @@ function AgentCard({ agent, status, streamText, elapsed, isExpanded, onToggle })
   const isDone = status === 'done';
   const isPending = status === 'pending';
 
+  const progress = isDone
+    ? 100
+    : isRunning
+    ? Math.min(Math.round((streamText.length / agent.expectedChars) * 100), 95)
+    : 0;
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -166,6 +176,23 @@ function AgentCard({ agent, status, streamText, elapsed, isExpanded, onToggle })
           <div className={`text-xs mt-0.5 ${isPending ? 'text-slate-700' : 'text-slate-500'}`}>
             {agent.desc}
           </div>
+          {/* Per-agent progress bar */}
+          {(isRunning || isDone) && (
+            <div className="mt-2 flex items-center gap-2">
+              <div className="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: agent.color }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                />
+              </div>
+              <span className="text-xs font-mono flex-shrink-0" style={{ color: isDone ? '#10b981' : agent.color }}>
+                {progress}%
+              </span>
+            </div>
+          )}
         </div>
 
         {/* XP badge + expand */}
@@ -206,7 +233,7 @@ function AgentCard({ agent, status, streamText, elapsed, isExpanded, onToggle })
         )}
       </AnimatePresence>
 
-      {/* Running progress bar */}
+      {/* Bottom shimmer bar when running */}
       {isRunning && (
         <div className="h-0.5 w-full relative overflow-hidden" style={{ background: `${agent.color}20` }}>
           <motion.div

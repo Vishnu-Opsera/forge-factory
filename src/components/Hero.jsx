@@ -2,10 +2,10 @@ import { motion } from 'framer-motion';
 import { Zap, ArrowRight, Code2, Layers, GitBranch, Shield } from 'lucide-react';
 
 const features = [
-  { icon: Code2, label: 'Intent Analysis', desc: 'AI extracts requirements from any input' },
-  { icon: Layers, label: 'Architecture Design', desc: 'Auto-generate system architecture & diagrams' },
-  { icon: GitBranch, label: 'PRD Generation', desc: 'Production-ready requirement documents' },
-  { icon: Shield, label: 'Sprint Ready Tasks', desc: 'Jira-ready stories with acceptance criteria' },
+  { icon: Code2, label: 'Triage', desc: 'Sorts & classifies any input into structured requirements' },
+  { icon: Layers, label: 'Drafthouse', desc: 'Drafts system architecture & diagrams automatically' },
+  { icon: GitBranch, label: 'Press', desc: 'Publishes production-grade PRDs from requirements' },
+  { icon: Shield, label: 'Mill', desc: 'Grinds requirements into Jira-ready sprint tasks' },
 ];
 
 const stats = [

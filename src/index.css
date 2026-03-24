@@ -125,6 +125,19 @@
     color: white !important;
   }
 
+  /* Work order markdown styles */
+  .prose-tasks h1 { @apply text-xl font-black text-white mb-4; }
+  .prose-tasks h2 { @apply text-base font-bold text-forge-purple mt-1 mb-2 flex items-center gap-2; }
+  .prose-tasks h3 { @apply text-sm font-semibold text-forge-cyan mt-4 mb-2 font-mono; }
+  .prose-tasks p { @apply text-sm text-slate-400 leading-relaxed mb-2; }
+  .prose-tasks strong { @apply text-slate-300 font-semibold; }
+  .prose-tasks blockquote { @apply border-l-2 border-slate-700 pl-3 text-slate-500 italic text-sm my-2; }
+  .prose-tasks ul { @apply space-y-1.5 my-2; }
+  .prose-tasks li { @apply text-sm text-slate-400 flex items-start gap-2; }
+  .prose-tasks li::before { content: '☐'; @apply text-forge-emerald flex-shrink-0 font-mono; }
+  .prose-tasks hr { @apply border-slate-800/60 my-4; }
+  .prose-tasks code { @apply text-xs font-mono text-forge-cyan bg-slate-800/60 px-1.5 py-0.5 rounded; }
+
   .priority-high {
     @apply text-red-400 bg-red-400/10 border border-red-400/20;
   }

@@ -21,9 +21,9 @@ function parseJSON(text) {
 
 const AGENT_PROMPTS = {
   intent: {
-    name: 'Intent Analysis Agent',
-    icon: '🔍',
-    system: `You are the Intent Analysis Agent for Forge Platform — an AI-powered software modernization platform.
+    name: 'Triage',
+    icon: '🔮',
+    system: `You are Triage — the requirements intelligence agent for Forge Platform, an AI-powered software modernization platform.
 Analyze the user's input and return ONLY valid JSON (no markdown, no explanation) with this exact structure:
 {
   "concept": "2-3 sentence product concept",
@@ -39,9 +39,9 @@ Analyze the user's input and return ONLY valid JSON (no markdown, no explanation
 Return at least 5 core features. Be specific and actionable.`,
   },
   architecture: {
-    name: 'Architecture Agent',
-    icon: '🏗️',
-    system: `You are the Architecture Agent for Forge Platform.
+    name: 'Drafthouse',
+    icon: '⚙️',
+    system: `You are Drafthouse — the architecture design agent for Forge Platform.
 Design the technical architecture and return ONLY valid JSON with this structure:
 {
   "style": "microservices|monolith|serverless|event-driven",
@@ -63,9 +63,9 @@ Design the technical architecture and return ONLY valid JSON with this structure
 For mermaid: use flowchart TD, include at least 8 nodes showing frontend, API, services, and database layers. Use proper Mermaid syntax with --> arrows and [label] nodes.`,
   },
   prd: {
-    name: 'PRD Generator',
-    icon: '📄',
-    system: `You are the PRD Generator for Forge Platform. Generate a comprehensive, professional Product Requirements Document in markdown.
+    name: 'Press',
+    icon: '📜',
+    system: `You are Press — the documentation agent for Forge Platform. Generate a comprehensive, professional Product Requirements Document in markdown.
 
 Structure:
 # [Product Name] — Product Requirements Document
@@ -114,37 +114,38 @@ Structure:
 Be detailed, professional, and actionable. This should be ready for stakeholder review.`,
   },
   tasks: {
-    name: 'Task Generator',
-    icon: '✅',
-    system: `You are the Development Task Generator for Forge Platform.
-Break requirements into actionable dev tasks. Return ONLY valid JSON:
-{
-  "total_points": 120,
-  "sprint_count": 4,
-  "epics": [
-    {
-      "id": "E1",
-      "title": "Epic Title",
-      "description": "What this epic delivers",
-      "color": "#8B5CF6",
-      "total_points": 30,
-      "stories": [
-        {
-          "id": "E1-S1",
-          "title": "User story title",
-          "user_story": "As a [user], I want [action] so that [benefit]",
-          "acceptance_criteria": ["AC1", "AC2", "AC3"],
-          "story_points": 5,
-          "priority": "high|medium|low",
-          "type": "feature|infra|testing|design",
-          "sprint": 1,
-          "tags": ["frontend", "backend"]
-        }
-      ]
-    }
-  ]
-}
-Generate 4 epics with 4-5 stories each. Use these epic colors: E1:#8B5CF6, E2:#06B6D4, E3:#10B981, E4:#F59E0B. Be specific.`,
+    name: 'Mill',
+    icon: '⚡',
+    system: `You are Mill — the sprint planning agent for Forge Platform.
+Break requirements into actionable development work orders. Output in this exact markdown format — no JSON, no preamble:
+
+# Work Orders
+
+**Total Story Points:** X | **Sprints:** X | **Stories:** X
+
+---
+
+## Epic 1: [Epic Title]
+> [One sentence describing what this epic delivers]
+
+### [E1-S1] [Story Title]
+**Type:** feature | **Priority:** high | **Sprint:** 1 | **Points:** 5
+**Tags:** frontend, backend
+
+**User Story**
+As a [user role], I want [action] so that [benefit].
+
+**Work Description**
+[2-3 sentences describing what needs to be built and how.]
+
+**Acceptance Criteria**
+- [ ] [Specific, testable criterion 1]
+- [ ] [Specific, testable criterion 2]
+- [ ] [Specific, testable criterion 3]
+
+---
+
+Repeat the story block for each story. Generate 4 epics with 4-5 stories each. Be specific and developer-actionable.`,
   },
 };
 
@@ -172,7 +173,7 @@ app.post('/api/forge', async (req, res) => {
 
     const stream = anthropic.messages.stream({
       model: 'claude-sonnet-4-6',
-      max_tokens: agentKey === 'prd' ? 4096 : 2048,
+      max_tokens: agentKey === 'prd' || agentKey === 'tasks' ? 4096 : 2048,
       system: agent.system,
       messages,
     });
@@ -241,7 +242,7 @@ app.post('/api/forge', async (req, res) => {
 
 // ─── Code Analysis Endpoints ─────────────────────────────────────────────────
 
-const CODE_ANALYSIS_SYSTEM = `You are the Forge Code Analysis Agent — a senior software architect specializing in legacy modernization.
+const CODE_ANALYSIS_SYSTEM = `You are Bench — the code intelligence agent for Forge Platform, a senior software architect specializing in legacy modernization.
 Analyze the provided codebase files/structure and return ONLY valid JSON (no markdown, no explanation):
 {
   "repo_name": "detected project name",
