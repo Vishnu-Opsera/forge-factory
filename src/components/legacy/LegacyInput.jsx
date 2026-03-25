@@ -5,8 +5,8 @@ import RepoAnalysis from './RepoAnalysis.jsx';
 
 const METHODS = [
   { id: 'github', icon: Github, label: 'GitHub URL', desc: 'Public repo URL', color: '#8B5CF6' },
-  { id: 'folder', icon: FolderOpen, label: 'Local Folder', desc: 'Browse & upload files', color: '#06B6D4' },
-  { id: 'zip', icon: FileArchive, label: 'ZIP File', desc: 'Upload a .zip archive', color: '#10B981' },
+  { id: 'folder', icon: FolderOpen, label: 'Local Folder', desc: 'Browse & upload files', color: '#C2B0F6' },
+  { id: 'zip', icon: FileArchive, label: 'ZIP File', desc: 'Upload a .zip archive', color: '#F5A83E' },
 ];
 
 const RELEVANT_EXTENSIONS = new Set([
@@ -252,9 +252,9 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
             <button
               onClick={() => folderRef.current?.click()}
               disabled={analyzing}
-              className="w-full py-8 border-2 border-dashed border-slate-700 hover:border-forge-cyan/50 rounded-xl text-center transition-all group"
+              className="w-full py-8 border-2 border-dashed border-slate-700 hover:border-forge-whisper/50 rounded-xl text-center transition-all group"
             >
-              <FolderOpen className="w-8 h-8 text-slate-600 group-hover:text-forge-cyan mx-auto mb-2 transition-colors" />
+              <FolderOpen className="w-8 h-8 text-slate-600 group-hover:text-forge-whisper mx-auto mb-2 transition-colors" />
               <div className="text-sm font-semibold text-slate-400 group-hover:text-slate-200">
                 {uploadedFiles.length > 0 ? `${uploadedFiles.length} files selected` : 'Click to browse folder'}
               </div>
@@ -269,9 +269,9 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
             <button
               onClick={() => zipRef.current?.click()}
               disabled={analyzing}
-              className="w-full py-8 border-2 border-dashed border-slate-700 hover:border-forge-emerald/50 rounded-xl text-center transition-all group"
+              className="w-full py-8 border-2 border-dashed border-slate-700 hover:border-forge-amber/50 rounded-xl text-center transition-all group"
             >
-              <FileArchive className="w-8 h-8 text-slate-600 group-hover:text-forge-emerald mx-auto mb-2 transition-colors" />
+              <FileArchive className="w-8 h-8 text-slate-600 group-hover:text-forge-amber mx-auto mb-2 transition-colors" />
               <div className="text-sm font-semibold text-slate-400 group-hover:text-slate-200">
                 {uploadedFiles.length > 0 ? uploadedFiles[0].name : 'Click to upload ZIP file'}
               </div>
@@ -313,7 +313,7 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
                     </div>
                   )}
                   {log.type === 'repo_info' && (
-                    <div className="text-xs text-forge-cyan">
+                    <div className="text-xs text-forge-whisper">
                       ✓ Connected: {log.data.owner}/{log.data.repo} · {log.data.files_fetched} files fetched
                     </div>
                   )}

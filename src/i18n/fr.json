@@ -1,0 +1,36 @@
+{
+  "nav": { "alm": "Tableau ALM", "newForge": "Nouvelle Forge", "back": "Retour", "beta": "BÊTA" },
+  "hero": {
+    "badge": "Modernisation Logicielle par IA",
+    "headline": "Qu'est-ce qu'on",
+    "headlineAccent": "construit ?",
+    "subtitleNew": "Décrivez votre idée, collez des exigences ou joignez des documents, images ou tableurs.",
+    "subtitleLegacy": "Téléversez du code, collez une URL GitHub ou déposez un ZIP — l'IA l'analysera automatiquement.",
+    "modeNew": "Nouveau Produit",
+    "modeLegacy": "Moderniser un Legacy",
+    "attachFiles": "Joindre des fichiers",
+    "fileTypes": "Images, XLS, CSV, PDF, Docs",
+    "shortcut": "⌘↵ pour forger",
+    "forgeButton": "Forger — Lancer les Agents IA",
+    "tryExample": "Essayez un exemple",
+    "footer": "Plateforme Forge — Jour 0 : Développer · Jour 1 : Déployer · Jour 2 : Surveiller"
+  },
+  "agents": {
+    "classifier": "Classificateur",
+    "classifierDesc": "Classification des exigences et structuration de l'intention",
+    "architect": "Architecte",
+    "architectDesc": "Conception de l'architecture système et de la pile technique",
+    "composer": "Compositeur",
+    "composerDesc": "Rédaction des documents de spécifications de production",
+    "specifier": "Spécificateur",
+    "specifierDesc": "Spécification des détails techniques au niveau ingénierie",
+    "planner": "Planificateur",
+    "plannerDesc": "Planification des ordres de travail prêts pour le sprint"
+  },
+  "pipeline": { "running": "En cours", "done": "Terminé", "pending": "En attente", "stopped": "Arrêté", "stopAll": "Arrêter", "complete": "Prêt pour le développement.", "modernizeComplete": "Plan de modernisation prêt.", "generating": "Génération" },
+  "results": { "architecture": "Architecture", "prd": "PRD", "techSpec": "Spec Technique", "sprintTasks": "Tâches Sprint", "downloadPRD": "Télécharger PRD", "downloadTechSpec": "Télécharger Spec", "exportTasks": "Exporter Tâches", "edit": "Modifier", "saveToALM": "Sauver dans ALM", "almDashboard": "Tableau ALM", "newForge": "Nouvelle Forge", "intentSummary": "Résumé d'Intention", "complexity": "complexité", "timeline": "délai" },
+  "alm": { "timeline": "Chronologie", "features": "Fonctionnalités", "stories": "Histoires", "insights": "Analyses", "baseline": "Référence", "approvals": "Approbations", "connectIDE": "Connecter IDE", "projects": "Projets", "settings": "Paramètres", "noProjects": "Aucune application forgée.", "startForging": "Commencer à Forger", "noProjectSelected": "Sélectionnez un projet.", "versions": "versions", "version": "version", "features_count": "fonctionnalités", "storiesDone": "histoires terminées" },
+  "stories": { "backlog": "Backlog", "inProgress": "En Cours", "inReview": "En Révision", "completed": "Terminé", "removed": "Supprimé", "allVersions": "Toutes les versions", "allEpics": "Tous les épopées", "stories": "histoires", "noStories": "Aucune histoire trouvée", "storyPoints": "Points d'Histoire", "sprint": "Sprint", "priority": "Priorité", "type": "Type", "tags": "Tags", "userStory": "Histoire Utilisateur", "workDescription": "Description du Travail", "acceptanceCriteria": "Critères d'Acceptation", "noTasksGenerated": "Aucune tâche générée.", "expandAll": "Tout Développer", "collapseAll": "Tout Réduire" },
+  "auth": { "login": "Se Connecter", "register": "Créer un Compte", "loginTitle": "Bienvenue.", "registerTitle": "Dernière étape.", "loginSubtitle": "Connectez-vous pour accéder à votre package complet.", "registerSubtitle": "Créez un compte gratuit pour accéder.", "name": "Nom Complet", "email": "E-mail", "password": "Mot de passe", "confirmPassword": "Confirmer", "namePlaceholder": "Votre nom", "emailPlaceholder": "vous@entreprise.com", "passwordPlaceholder": "Min. 6 caractères", "loginButton": "Se Connecter et Voir", "registerButton": "Créer et Voir", "switchToRegister": "Pas de compte ?", "switchToLogin": "Déjà un compte ?", "createFree": "Créez-en un", "loginLink": "Se connecter", "autofillHint": "Les mots de passe sauvegardés fonctionnent ici", "resultsReady": "Vos résultats sont prêts", "perk1": "Voir PRD, Spec Technique et Tâches", "perk2": "Connecter IDE via MCP", "perk3": "Suivre la progression dans ALM", "perk4": "Partager et approuver les artefacts" },
+  "common": { "loading": "Chargement...", "error": "Erreur", "cancel": "Annuler", "save": "Sauver", "copy": "Copier", "copied": "Copié", "share": "Partager", "delete": "Supprimer", "edit": "Modifier", "close": "Fermer", "regenerate": "Régénérer", "language": "Langue" }
+}

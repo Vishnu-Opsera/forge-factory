@@ -110,11 +110,11 @@ export default function SharedALMView({ shareTokenId, onBack }) {
           <ArrowLeft className="w-4 h-4" />Back
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-forge-purple to-forge-cyan flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-opsera-plum to-forge-purple flex items-center justify-center">
             <Zap className="w-3.5 h-3.5 text-white" />
           </div>
           <span className="font-bold tracking-tight">{settings.appName || 'FORGE'}</span>
-          <span className="ml-1 text-xs font-mono text-forge-cyan bg-forge-cyan/10 border border-forge-cyan/20 px-2 py-0.5 rounded-full">ALM</span>
+          <span className="ml-1 text-xs font-mono text-forge-whisper bg-forge-whisper/10 border border-forge-whisper/20 px-2 py-0.5 rounded-full">ALM</span>
           <span className="text-xs flex items-center gap-1 text-slate-500 bg-slate-800/60 px-2 py-0.5 rounded-full border border-slate-700/40">
             <Eye className="w-3 h-3" /> Read-only
           </span>

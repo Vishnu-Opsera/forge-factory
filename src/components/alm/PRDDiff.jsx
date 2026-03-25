@@ -5,7 +5,7 @@ import { computeDiff } from '../../store/almStore.js';
 
 function FeatureCard({ feature, type }) {
   const config = {
-    added: { color: '#10B981', bg: 'bg-emerald-500/5', border: 'border-emerald-500/20', icon: Plus, label: 'Added' },
+    added: { color: '#F5A83E', bg: 'bg-[#F5A83E]/5', border: 'border-[#F5A83E]/20', icon: Plus, label: 'Added' },
     removed: { color: '#EF4444', bg: 'bg-red-500/5', border: 'border-red-500/20', icon: Minus, label: 'Removed' },
     enhanced: { color: '#8B5CF6', bg: 'bg-purple-500/5', border: 'border-purple-500/20', icon: ArrowUpDown, label: 'Enhanced' },
     unchanged: { color: '#475569', bg: 'bg-slate-800/30', border: 'border-slate-700/40', icon: null, label: '' },
@@ -87,7 +87,7 @@ export default function PRDDiff({ versions }) {
       {diff && (
         <div className="grid grid-cols-4 gap-3">
           {[
-            { label: 'Added', value: addedFeatures.length, color: '#10B981' },
+            { label: 'Added', value: addedFeatures.length, color: '#F5A83E' },
             { label: 'Removed', value: removedFeatures.length, color: '#EF4444' },
             { label: 'Enhanced', value: enhancedFeatures.length, color: '#8B5CF6' },
             { label: 'Unchanged', value: unchangedFeatures.length, color: '#475569' },
@@ -119,8 +119,8 @@ export default function PRDDiff({ versions }) {
             {/* Added/Enhanced column */}
             <div>
               <div className="flex items-center gap-1.5 mb-2">
-                <Plus className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Added ({addedFeatures.length})</span>
+                <Plus className="w-3.5 h-3.5 text-[#F5A83E]" />
+                <span className="text-xs font-semibold text-[#F5A83E] uppercase tracking-wider">Added ({addedFeatures.length})</span>
               </div>
               <div className="space-y-2">
                 {addedFeatures.length === 0 && enhancedFeatures.length === 0 && <div className="text-xs text-slate-700 py-2 text-center">None</div>}
@@ -164,12 +164,12 @@ export default function PRDDiff({ versions }) {
       {(techAdded.length > 0 || techRemoved.length > 0) && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-4">
           <div className="flex items-center gap-2 mb-3">
-            <Layers className="w-4 h-4 text-forge-cyan" />
+            <Layers className="w-4 h-4 text-forge-whisper" />
             <span className="text-sm font-semibold text-white">Architecture Changes</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {techAdded.map(t => (
-              <span key={t} className="text-xs px-2.5 py-1 rounded-full border text-emerald-400 border-emerald-400/30 bg-emerald-400/10">+ {t}</span>
+              <span key={t} className="text-xs px-2.5 py-1 rounded-full border text-[#F5A83E] border-[#F5A83E]/30 bg-[#F5A83E]/10">+ {t}</span>
             ))}
             {techRemoved.map(t => (
               <span key={t} className="text-xs px-2.5 py-1 rounded-full border text-red-400 border-red-400/30 bg-red-400/10">− {t}</span>

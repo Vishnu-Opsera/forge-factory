@@ -76,7 +76,7 @@ export default function TasksTab({ data }) {
             <div className="text-xs text-slate-500 mt-1">Story Points</div>
           </div>
           <div className="glass-card p-4 text-center">
-            <div className="text-3xl font-black text-forge-cyan">{stats.stories}</div>
+            <div className="text-3xl font-black text-forge-whisper">{stats.stories}</div>
             <div className="text-xs text-slate-500 mt-1">User Stories</div>
           </div>
           <div className="glass-card p-4 text-center">

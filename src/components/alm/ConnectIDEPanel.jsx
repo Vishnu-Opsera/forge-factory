@@ -10,8 +10,8 @@ function CopyButton({ text }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <button onClick={copy} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-forge-cyan transition-colors">
-      {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+    <button onClick={copy} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-forge-whisper transition-colors">
+      {copied ? <Check className="w-3.5 h-3.5 text-[#F5A83E]" /> : <Copy className="w-3.5 h-3.5" />}
       {copied ? 'Copied' : 'Copy'}
     </button>
   );
@@ -33,7 +33,7 @@ const STATUS_META = {
   not_developed: { label: 'Backlog', color: '#94A3B8', icon: Circle },
   in_progress:   { label: 'In Progress', color: '#F59E0B', icon: Clock },
   in_review:     { label: 'In Review', color: '#6366F1', icon: GitPullRequest },
-  completed:     { label: 'Completed', color: '#10B981', icon: CheckCircle2 },
+  completed:     { label: 'Completed', color: '#F5A83E', icon: CheckCircle2 },
 };
 
 export default function ConnectIDEPanel({ project, versions }) {
@@ -112,7 +112,7 @@ export default function ConnectIDEPanel({ project, versions }) {
       {/* Header */}
       <div>
         <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-          <Terminal className="w-5 h-5 text-forge-cyan" />
+          <Terminal className="w-5 h-5 text-forge-whisper" />
           Connect Your IDE
         </h2>
         <p className="text-sm text-slate-500">
@@ -121,8 +121,8 @@ export default function ConnectIDEPanel({ project, versions }) {
       </div>
 
       {/* Sync status */}
-      <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm ${synced ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400' : 'border-amber-500/20 bg-amber-500/5 text-amber-400'}`}>
-        <div className={`w-2 h-2 rounded-full ${synced ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+      <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm ${synced ? 'border-[#F5A83E]/20 bg-[#F5A83E]/5 text-[#F5A83E]' : 'border-amber-500/20 bg-amber-500/5 text-amber-400'}`}>
+        <div className={`w-2 h-2 rounded-full ${synced ? 'bg-forge-amber animate-pulse' : 'bg-amber-400'}`} />
         {synced ? 'Server sync active — MCP can read your project data' : 'Server offline — start the dev server to enable MCP'}
       </div>
 
@@ -156,7 +156,7 @@ export default function ConnectIDEPanel({ project, versions }) {
           <div className="h-9 bg-slate-800/50 rounded-lg animate-pulse" />
         ) : (
           <div className="flex items-center gap-2 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2">
-            <code className="flex-1 text-xs font-mono text-forge-cyan truncate">{apiKey}</code>
+            <code className="flex-1 text-xs font-mono text-forge-whisper truncate">{apiKey}</code>
             <CopyButton text={apiKey || ''} />
           </div>
         )}
@@ -173,7 +173,7 @@ export default function ConnectIDEPanel({ project, versions }) {
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`px-5 py-3 text-sm font-medium transition-colors ${activeTab === t.id ? 'text-white border-b-2 border-forge-cyan' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`px-5 py-3 text-sm font-medium transition-colors ${activeTab === t.id ? 'text-white border-b-2 border-forge-whisper' : 'text-slate-500 hover:text-slate-300'}`}
             >
               {t.label}
             </button>
@@ -183,7 +183,7 @@ export default function ConnectIDEPanel({ project, versions }) {
         <div className="p-5 space-y-4">
           {activeTab === 'cursor' && (
             <>
-              <p className="text-xs text-slate-500">Add to <code className="text-forge-cyan">.cursor/mcp.json</code> in your project root, or paste into Cursor → Settings → MCP:</p>
+              <p className="text-xs text-slate-500">Add to <code className="text-forge-whisper">.cursor/mcp.json</code> in your project root, or paste into Cursor → Settings → MCP:</p>
               <CodeBlock label="Cursor MCP Config" code={cursorConfig} />
               <div className="text-xs text-slate-600 space-y-1">
                 <div>1. Open Cursor Settings → Features → MCP</div>
@@ -207,7 +207,7 @@ export default function ConnectIDEPanel({ project, versions }) {
 
           {activeTab === 'stdio' && (
             <>
-              <p className="text-xs text-slate-500">For any MCP-compatible client. Uses stdio transport via <code className="text-forge-cyan">mcp-server.js</code>:</p>
+              <p className="text-xs text-slate-500">For any MCP-compatible client. Uses stdio transport via <code className="text-forge-whisper">mcp-server.js</code>:</p>
               <CodeBlock label="MCP Config (stdio)" code={stdioConfig} />
             </>
           )}
@@ -220,8 +220,8 @@ export default function ConnectIDEPanel({ project, versions }) {
         <div className="space-y-3">
           {[
             { step: '1', text: 'Tell your coding agent to get the next work order from forge-factory', color: '#8B5CF6' },
-            { step: '2', text: 'The agent pulls full work order details: user story, acceptance criteria, tech context', color: '#06B6D4' },
-            { step: '3', text: 'Monitor as the agent implements the work order in your codebase', color: '#10B981' },
+            { step: '2', text: 'The agent pulls full work order details: user story, acceptance criteria, tech context', color: '#C2B0F6' },
+            { step: '3', text: 'Monitor as the agent implements the work order in your codebase', color: '#F5A83E' },
             { step: '4', text: 'When done, the agent marks the work order as "In Review" — visible here in Planner', color: '#6366F1' },
           ].map(s => (
             <div key={s.step} className="flex items-start gap-3">

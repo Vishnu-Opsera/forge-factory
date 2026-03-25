@@ -27,7 +27,7 @@ function BarChart({ data, valueKey, labelKey, color = '#8B5CF6', secondaryKey, s
 }
 
 // ── Sparkline SVG ─────────────────────────────────────────────────────────────
-function Sparkline({ data, valueKey, color = '#10B981' }) {
+function Sparkline({ data, valueKey, color = '#F5A83E' }) {
   if (data.length < 2) return <div className="text-xs text-slate-700">Need 2+ versions for trend</div>;
   const vals = data.map(d => d[valueKey] || 0);
   const max = Math.max(...vals, 1);
@@ -67,7 +67,7 @@ function Donut({ value, max, color, label }) {
 
 function StatCard({ icon: Icon, label, value, sub, trend, color = '#8B5CF6' }) {
   const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : MinusIcon;
-  const trendColor = trend === 'up' ? '#10B981' : trend === 'down' ? '#EF4444' : '#94A3B8';
+  const trendColor = trend === 'up' ? '#F5A83E' : trend === 'down' ? '#EF4444' : '#94A3B8';
   return (
     <div className="glass-card p-4">
       <div className="flex items-start justify-between mb-2">
@@ -106,8 +106,8 @@ export default function InsightsDashboard({ insights, versions }) {
       {/* Headline stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard icon={Star} label="Total Features" value={totalFeatures} color="#8B5CF6" />
-        <StatCard icon={CheckCircle2} label="Stories Done" value={completedStories} sub={`of ${totalStories} total`} trend={completionTrend} color="#10B981" />
-        <StatCard icon={Clock} label="Avg Time to PR" value={avgTimeToPR ? `${avgTimeToPR}h` : '—'} sub={timeToPR.length ? `${timeToPR.length} PRs tracked` : 'No PRs linked'} color="#06B6D4" />
+        <StatCard icon={CheckCircle2} label="Stories Done" value={completedStories} sub={`of ${totalStories} total`} trend={completionTrend} color="#F5A83E" />
+        <StatCard icon={Clock} label="Avg Time to PR" value={avgTimeToPR ? `${avgTimeToPR}h` : '—'} sub={timeToPR.length ? `${timeToPR.length} PRs tracked` : 'No PRs linked'} color="#C2B0F6" />
         <StatCard icon={Target} label="Story Points" value={latestPoints} color="#F59E0B" />
       </div>
 
@@ -135,18 +135,18 @@ export default function InsightsDashboard({ insights, versions }) {
         {/* Story completion rate */}
         <div className="glass-card p-5">
           <div className="flex items-center gap-2 mb-4">
-            <CheckCircle2 className="w-4 h-4 text-forge-emerald" />
+            <CheckCircle2 className="w-4 h-4 text-forge-amber" />
             <span className="text-sm font-semibold text-white">Story Completion</span>
           </div>
           <div className="flex items-center gap-6">
-            <Donut value={completedStories} max={totalStories} color="#10B981" label="Completed" />
+            <Donut value={completedStories} max={totalStories} color="#F5A83E" label="Completed" />
             <Donut value={inProgressStories} max={totalStories} color="#F59E0B" label="In Progress" />
             <Donut value={notDevelopedStories.length} max={totalStories} color="#475569" label="Backlog" />
           </div>
           {storyCompletion.length > 1 && (
             <div className="mt-4">
               <div className="text-xs text-slate-500 mb-1">Completion rate over time</div>
-              <Sparkline data={storyCompletion} valueKey="rate" color="#10B981" />
+              <Sparkline data={storyCompletion} valueKey="rate" color="#F5A83E" />
             </div>
           )}
         </div>
@@ -156,18 +156,18 @@ export default function InsightsDashboard({ insights, versions }) {
       {archEvolution.length > 0 && (
         <div className="glass-card p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Layers className="w-4 h-4 text-forge-cyan" />
+            <Layers className="w-4 h-4 text-forge-whisper" />
             <span className="text-sm font-semibold text-white">Architecture Evolution</span>
           </div>
           <div className="space-y-3">
             {archEvolution.map((ev, i) => (
               <div key={i} className="flex items-start gap-3">
-                <div className="text-xs font-mono font-bold text-forge-cyan bg-forge-cyan/10 border border-forge-cyan/20 px-2 py-0.5 rounded flex-shrink-0">
+                <div className="text-xs font-mono font-bold text-forge-whisper bg-forge-whisper/10 border border-forge-whisper/20 px-2 py-0.5 rounded flex-shrink-0">
                   v{ev.semver}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {ev.tech_added.map(t => (
-                    <span key={t} className="text-xs px-2 py-0.5 rounded-full text-emerald-400 border border-emerald-400/30 bg-emerald-400/10">+ {t}</span>
+                    <span key={t} className="text-xs px-2 py-0.5 rounded-full text-[#F5A83E] border border-[#F5A83E]/30 bg-[#F5A83E]/10">+ {t}</span>
                   ))}
                   {ev.tech_removed.map(t => (
                     <span key={t} className="text-xs px-2 py-0.5 rounded-full text-red-400 border border-red-400/30 bg-red-400/10">− {t}</span>

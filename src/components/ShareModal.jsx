@@ -46,7 +46,7 @@ export default function ShareModal({ projectId, projectName, onClose }) {
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800/60">
           <div className="flex items-center gap-2">
-            <Link2 className="w-4 h-4 text-forge-cyan" />
+            <Link2 className="w-4 h-4 text-forge-whisper" />
             <span className="font-semibold text-white text-sm">Share "{projectName}"</span>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
@@ -67,7 +67,7 @@ export default function ShareModal({ projectId, projectName, onClose }) {
               onChange={e => setLabel(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && generate()}
               placeholder="Label (e.g. Client Review, Sprint Demo)"
-              className="flex-1 bg-slate-900 border border-slate-700/60 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-forge-cyan/50 placeholder-slate-600"
+              className="flex-1 bg-slate-900 border border-slate-700/60 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-forge-whisper/50 placeholder-slate-600"
             />
             <button onClick={generate} className="btn-primary text-sm px-4 flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5" /> Create
@@ -94,7 +94,7 @@ export default function ShareModal({ projectId, projectName, onClose }) {
                       </div>
                     </div>
                     <button onClick={() => copy(s.id)} className="p-1.5 text-slate-500 hover:text-white transition-colors flex-shrink-0">
-                      {copied === s.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copied === s.id ? <Check className="w-3.5 h-3.5 text-[#F5A83E]" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                     <button onClick={() => remove(s.id)} className="p-1.5 text-slate-600 hover:text-red-400 transition-colors flex-shrink-0">
                       <Trash2 className="w-3.5 h-3.5" />

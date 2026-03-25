@@ -66,7 +66,7 @@ export default function SettingsPanel() {
       {/* Share Access Control */}
       <div className="glass-card p-5">
         <div className="flex items-center gap-2 mb-4">
-          <Link2 className="w-4 h-4 text-forge-cyan" />
+          <Link2 className="w-4 h-4 text-forge-whisper" />
           <span className="font-semibold text-white text-sm">Share Link Security</span>
         </div>
         <div className="space-y-4">
@@ -108,7 +108,7 @@ export default function SettingsPanel() {
       {/* Allowed Approvers */}
       <div className="glass-card p-5">
         <div className="flex items-center gap-2 mb-1">
-          <Users className="w-4 h-4 text-forge-emerald" />
+          <Users className="w-4 h-4 text-forge-amber" />
           <span className="font-semibold text-white text-sm">Allowed Approvers</span>
         </div>
         <p className="text-xs text-slate-500 mb-4">Email addresses allowed to review and approve artifacts. Leave empty to allow anyone with the link.</p>
@@ -119,7 +119,7 @@ export default function SettingsPanel() {
             onChange={e => setNewEmail(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addEmail()}
             placeholder="approver@company.com"
-            className="flex-1 bg-slate-900 border border-slate-700/60 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-forge-emerald/50 placeholder-slate-600"
+            className="flex-1 bg-slate-900 border border-slate-700/60 rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-forge-amber/50 placeholder-slate-600"
           />
           <button onClick={addEmail} className="btn-secondary text-xs px-3 py-2 flex items-center gap-1.5">
             <Plus className="w-3.5 h-3.5" /> Add
@@ -130,7 +130,7 @@ export default function SettingsPanel() {
             {settings.allowedEmails.map(email => (
               <div key={email} className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-800/60 text-sm">
                 <div className="flex items-center gap-2">
-                  <Shield className="w-3.5 h-3.5 text-forge-emerald" />
+                  <Shield className="w-3.5 h-3.5 text-forge-amber" />
                   <span className="text-slate-300">{email}</span>
                 </div>
                 <button onClick={() => removeEmail(email)} className="text-slate-600 hover:text-red-400 transition-colors">

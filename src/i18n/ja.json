@@ -1,0 +1,36 @@
+{
+  "nav": { "alm": "ALMダッシュボード", "newForge": "新規フォージ", "back": "戻る", "beta": "ベータ" },
+  "hero": {
+    "badge": "AI搭載ソフトウェア近代化",
+    "headline": "何を",
+    "headlineAccent": "構築しますか？",
+    "subtitleNew": "アイデアを説明するか、要件を貼り付けるか、ドキュメント、画像、スプレッドシートを添付してください。",
+    "subtitleLegacy": "コードをアップロードするか、GitHub URLを貼り付けるか、ZIPをドロップしてください。",
+    "modeNew": "新規プロダクト",
+    "modeLegacy": "レガシー近代化",
+    "attachFiles": "ファイルを添付",
+    "fileTypes": "画像、XLS、CSV、PDF、ドキュメント",
+    "shortcut": "⌘↵ でフォージ",
+    "forgeButton": "フォージ — AIエージェント起動",
+    "tryExample": "サンプルを試す",
+    "footer": "Forgeプラットフォーム — Day 0: 開発 · Day 1: デプロイ · Day 2: 監視"
+  },
+  "agents": {
+    "classifier": "クラシファイアー",
+    "classifierDesc": "要件の分類と意図の構造化",
+    "architect": "アーキテクト",
+    "architectDesc": "システムアーキテクチャとテックスタックの設計",
+    "composer": "コンポーザー",
+    "composerDesc": "本番グレードの要件ドキュメント作成",
+    "specifier": "スペシファイアー",
+    "specifierDesc": "エンジニアリングレベルの技術仕様書作成",
+    "planner": "プランナー",
+    "plannerDesc": "スプリント対応の開発作業オーダー計画"
+  },
+  "pipeline": { "running": "実行中", "done": "完了", "pending": "待機中", "stopped": "停止", "stopAll": "停止", "complete": "開発準備完了。", "modernizeComplete": "近代化計画完成。", "generating": "生成中" },
+  "results": { "architecture": "アーキテクチャ", "prd": "PRD", "techSpec": "技術仕様", "sprintTasks": "スプリントタスク", "downloadPRD": "PRDダウンロード", "downloadTechSpec": "仕様書ダウンロード", "exportTasks": "タスクエクスポート", "edit": "編集", "saveToALM": "ALMに保存", "almDashboard": "ALMダッシュボード", "newForge": "新規フォージ", "intentSummary": "意図サマリー", "complexity": "複雑度", "timeline": "タイムライン" },
+  "alm": { "timeline": "タイムライン", "features": "機能", "stories": "ストーリー", "insights": "インサイト", "baseline": "ベースライン", "approvals": "承認", "connectIDE": "IDE接続", "projects": "プロジェクト", "settings": "設定", "noProjects": "フォージ済みアプリはありません。", "startForging": "フォージ開始", "noProjectSelected": "プロジェクトを選択してください。", "versions": "バージョン", "version": "バージョン", "features_count": "機能", "storiesDone": "ストーリー完了" },
+  "stories": { "backlog": "バックログ", "inProgress": "進行中", "inReview": "レビュー中", "completed": "完了", "removed": "削除済み", "allVersions": "全バージョン", "allEpics": "全エピック", "stories": "ストーリー", "noStories": "ストーリーが見つかりません", "storyPoints": "ストーリーポイント", "sprint": "スプリント", "priority": "優先度", "type": "タイプ", "tags": "タグ", "userStory": "ユーザーストーリー", "workDescription": "作業説明", "acceptanceCriteria": "受け入れ基準", "noTasksGenerated": "タスクが生成されていません。", "expandAll": "すべて展開", "collapseAll": "すべて折りたたむ" },
+  "auth": { "login": "ログイン", "register": "アカウント作成", "loginTitle": "おかえりなさい。", "registerTitle": "最後のステップ。", "loginSubtitle": "ログインしてパッケージ全体にアクセス。", "registerSubtitle": "無料アカウントを作成してアクセス。", "name": "フルネーム", "email": "メールアドレス", "password": "パスワード", "confirmPassword": "確認", "namePlaceholder": "お名前", "emailPlaceholder": "you@company.com", "passwordPlaceholder": "最小6文字", "loginButton": "ログインして結果を表示", "registerButton": "作成して結果を表示", "switchToRegister": "アカウントをお持ちでない方は？", "switchToLogin": "すでにアカウントをお持ちの方は？", "createFree": "無料作成", "loginLink": "ログイン", "autofillHint": "ブラウザの保存パスワードが使えます", "resultsReady": "結果が準備できました", "perk1": "PRD、技術仕様、スプリントタスクを表示", "perk2": "MCP経由でIDEを接続", "perk3": "ALMで進捗を追跡", "perk4": "成果物を共有・承認" },
+  "common": { "loading": "読み込み中...", "error": "エラー", "cancel": "キャンセル", "save": "保存", "copy": "コピー", "copied": "コピー済み", "share": "共有", "delete": "削除", "edit": "編集", "close": "閉じる", "regenerate": "再生成", "language": "言語" }
+}

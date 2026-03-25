@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GitBranch, GitCommit, Zap, ExternalLink, Edit3, Check, X } from 'lucide-react';
 
-const PIPELINE_COLORS = { passed: '#10B981', failed: '#EF4444', running: '#F59E0B', pending: '#94A3B8' };
+const PIPELINE_COLORS = { passed: '#F5A83E', failed: '#EF4444', running: '#F59E0B', pending: '#94A3B8' };
 const PIPELINE_LABELS = { passed: '✓ Passed', failed: '✗ Failed', running: '⟳ Running', pending: '○ Pending' };
 
 export function LinkChip({ href, icon: Icon, label, color }) {
@@ -58,7 +58,7 @@ export default function LinkPanel({ links, versionId, onSave }) {
       {!editing && (
         <div className="flex flex-wrap items-center gap-2">
           <LinkChip href={links?.pr_url} icon={GitBranch} label={`PR${links?.pr_url?.match(/\/(\d+)$/)?.[1] ? ' #' + links.pr_url.match(/\/(\d+)$/)[1] : ''}`} color="#8B5CF6" />
-          <LinkChip href={links?.commit_url || (links?.commit_sha ? `#${links.commit_sha}` : null)} icon={GitCommit} label={links?.commit_sha?.slice(0, 7) || null} color="#06B6D4" />
+          <LinkChip href={links?.commit_url || (links?.commit_sha ? `#${links.commit_sha}` : null)} icon={GitCommit} label={links?.commit_sha?.slice(0, 7) || null} color="#C2B0F6" />
           <LinkChip href={links?.pipeline_url} icon={Zap} label="Pipeline" color="#F59E0B" />
           <PipelineStatusBadge status={links?.pipeline_status} />
           {onSave && (
@@ -106,7 +106,7 @@ export default function LinkPanel({ links, versionId, onSave }) {
                 <option value="running">⟳ Running</option>
                 <option value="pending">○ Pending</option>
               </select>
-              <button onClick={handleSave} className="ml-auto flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 font-semibold">
+              <button onClick={handleSave} className="ml-auto flex items-center gap-1 text-xs text-[#F5A83E] hover:text-emerald-300 font-semibold">
                 <Check className="w-3.5 h-3.5" /> Save
               </button>
               <button onClick={() => setEditing(false)} className="text-xs text-slate-600 hover:text-slate-400">

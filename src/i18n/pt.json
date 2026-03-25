@@ -1,0 +1,36 @@
+{
+  "nav": { "alm": "Painel ALM", "newForge": "Nova Forja", "back": "Voltar", "beta": "BETA" },
+  "hero": {
+    "badge": "Modernização de Software com IA",
+    "headline": "O que vamos",
+    "headlineAccent": "construir?",
+    "subtitleNew": "Descreva sua ideia, cole requisitos ou anexe documentos, imagens ou planilhas.",
+    "subtitleLegacy": "Faça upload de código, cole uma URL do GitHub ou arraste um ZIP — a IA analisará automaticamente.",
+    "modeNew": "Novo Produto",
+    "modeLegacy": "Modernizar Legacy",
+    "attachFiles": "Anexar arquivos",
+    "fileTypes": "Imagens, XLS, CSV, PDF, Docs",
+    "shortcut": "⌘↵ para forjar",
+    "forgeButton": "Forjar — Lançar Agentes IA",
+    "tryExample": "Tente um exemplo",
+    "footer": "Plataforma Forge — Dia 0: Desenvolver · Dia 1: Implantar · Dia 2: Monitorar"
+  },
+  "agents": {
+    "triage": "triage",
+    "triageDesc": "Classificando sua ideia em requisitos estruturados",
+    "drafthouse": "drafthouse",
+    "drafthouseDesc": "Elaborando a arquitetura do sistema e stack técnico",
+    "press": "press",
+    "pressDesc": "Publicando documentos de requisitos de produção",
+    "blueprint": "blueprint",
+    "blueprintDesc": "Escrevendo especificação técnica de engenharia",
+    "mill": "mill",
+    "millDesc": "Transformando requisitos em tarefas prontas para sprint"
+  },
+  "pipeline": { "running": "Executando", "done": "Concluído", "pending": "Pendente", "stopped": "Parado", "stopAll": "Parar", "complete": "Pronto para desenvolvimento.", "modernizeComplete": "Plano de modernização pronto.", "generating": "Gerando" },
+  "results": { "architecture": "Arquitetura", "prd": "PRD", "techSpec": "Spec Técnica", "sprintTasks": "Tarefas do Sprint", "downloadPRD": "Baixar PRD", "downloadTechSpec": "Baixar Spec", "exportTasks": "Exportar Tarefas", "edit": "Editar", "saveToALM": "Salvar no ALM", "almDashboard": "Painel ALM", "newForge": "Nova Forja", "intentSummary": "Resumo da Intenção", "complexity": "complexidade", "timeline": "prazo" },
+  "alm": { "timeline": "Linha do Tempo", "features": "Funcionalidades", "stories": "Histórias", "insights": "Insights", "baseline": "Baseline", "approvals": "Aprovações", "connectIDE": "Conectar IDE", "projects": "Projetos", "settings": "Configurações", "noProjects": "Nenhum app forjado ainda.", "startForging": "Começar a Forjar", "noProjectSelected": "Selecione um projeto.", "versions": "versões", "version": "versão", "features_count": "funcionalidades", "storiesDone": "histórias concluídas" },
+  "stories": { "backlog": "Backlog", "inProgress": "Em Andamento", "inReview": "Em Revisão", "completed": "Concluído", "removed": "Removido", "allVersions": "Todas as versões", "allEpics": "Todos os épicos", "stories": "histórias", "noStories": "Nenhuma história encontrada", "storyPoints": "Pontos de História", "sprint": "Sprint", "priority": "Prioridade", "type": "Tipo", "tags": "Tags", "userStory": "História do Usuário", "workDescription": "Descrição do Trabalho", "acceptanceCriteria": "Critérios de Aceite", "noTasksGenerated": "Nenhuma tarefa gerada.", "expandAll": "Expandir Tudo", "collapseAll": "Recolher Tudo" },
+  "auth": { "login": "Entrar", "register": "Criar Conta", "loginTitle": "Bem-vindo de volta.", "registerTitle": "Último passo.", "loginSubtitle": "Entre para acessar seu pacote completo gerado por IA.", "registerSubtitle": "Crie uma conta gratuita para acessar.", "name": "Nome Completo", "email": "E-mail", "password": "Senha", "confirmPassword": "Confirmar Senha", "namePlaceholder": "Seu nome", "emailPlaceholder": "voce@empresa.com", "passwordPlaceholder": "Mín. 6 caracteres", "loginButton": "Entrar e Ver Resultados", "registerButton": "Criar e Ver Resultados", "switchToRegister": "Não tem conta?", "switchToLogin": "Já tem uma conta?", "createFree": "Crie grátis", "loginLink": "Entrar", "autofillHint": "Senhas salvas no navegador funcionam aqui", "resultsReady": "Seus resultados estão prontos", "perk1": "Ver PRD completo, Spec Técnica e Tarefas", "perk2": "Conectar IDE via MCP", "perk3": "Acompanhar progresso no ALM", "perk4": "Compartilhar e aprovar artefatos" },
+  "common": { "loading": "Carregando...", "error": "Erro", "cancel": "Cancelar", "save": "Salvar", "copy": "Copiar", "copied": "Copiado", "share": "Compartilhar", "delete": "Excluir", "edit": "Editar", "close": "Fechar", "regenerate": "Regenerar", "language": "Idioma" }
+}

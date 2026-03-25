@@ -14,9 +14,9 @@ const TasksTab = lazy(() => import('./Results/TasksTab.jsx'));
 
 const STATUS_CONFIG = {
   pending:           { label: 'Pending Review',     color: '#F59E0B' },
-  approved:          { label: 'Approved',            color: '#10B981' },
+  approved:          { label: 'Approved',            color: '#F5A83E' },
   rejected:          { label: 'Rejected',            color: '#EF4444' },
-  changes_requested: { label: 'Changes Requested',  color: '#06B6D4' },
+  changes_requested: { label: 'Changes Requested',  color: '#C2B0F6' },
 };
 
 export default function ApprovalReview({ approvalId, onBack }) {
@@ -100,7 +100,7 @@ export default function ApprovalReview({ approvalId, onBack }) {
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-forge-purple to-forge-cyan flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-opsera-plum to-forge-purple flex items-center justify-center">
             <Zap className="w-3.5 h-3.5 text-white" />
           </div>
           <span className="font-bold tracking-tight">{settings.appName}</span>
@@ -168,9 +168,9 @@ export default function ApprovalReview({ approvalId, onBack }) {
             {/* Action selection */}
             <div className="grid grid-cols-3 gap-2">
               {[
-                { id: 'approve', label: 'Approve', icon: CheckCircle2, color: '#10B981' },
+                { id: 'approve', label: 'Approve', icon: CheckCircle2, color: '#F5A83E' },
                 { id: 'reject', label: 'Reject', icon: XCircle, color: '#EF4444' },
-                { id: 'changes', label: 'Request Changes', icon: MessageSquare, color: '#06B6D4' },
+                { id: 'changes', label: 'Request Changes', icon: MessageSquare, color: '#C2B0F6' },
               ].map(opt => (
                 <button
                   key={opt.id}
@@ -209,7 +209,7 @@ export default function ApprovalReview({ approvalId, onBack }) {
                   onChange={e => setModifiedPrompt(e.target.value)}
                   placeholder="Paste or write your modified requirements here. The engineering team can use this as a new Forge prompt..."
                   rows={6}
-                  className="w-full bg-slate-900 border border-slate-700/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-forge-cyan/50 placeholder-slate-600 resize-none font-mono leading-relaxed"
+                  className="w-full bg-slate-900 border border-slate-700/60 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-forge-whisper/50 placeholder-slate-600 resize-none font-mono leading-relaxed"
                 />
                 <p className="text-xs text-slate-600 mt-1.5">This will be sent back to the engineering team to re-forge with your modifications.</p>
               </div>

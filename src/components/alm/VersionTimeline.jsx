@@ -6,12 +6,12 @@ import {
 } from 'lucide-react';
 import LinkPanel from './LinkPanel.jsx';
 
-const BUMP_COLORS = { major: '#8B5CF6', minor: '#06B6D4', patch: '#10B981' };
+const BUMP_COLORS = { major: '#8B5CF6', minor: '#C2B0F6', patch: '#F5A83E' };
 
 function ChangeTag({ type, items }) {
   if (!items?.length) return null;
   const config = {
-    added: { color: '#10B981', icon: Plus, label: '+' },
+    added: { color: '#F5A83E', icon: Plus, label: '+' },
     removed: { color: '#EF4444', icon: Minus, label: '-' },
     enhanced: { color: '#8B5CF6', icon: ArrowUpDown, label: '~' },
   }[type];
@@ -79,11 +79,11 @@ function VersionCard({ version, isSelected, onSelect, onViewArtifact, onUpdateLi
               <circle cx="16" cy="16" r="12" fill="none" stroke="#1e2a4a" strokeWidth="3" />
               <circle
                 cx="16" cy="16" r="12" fill="none"
-                stroke={completionPct > 50 ? '#10B981' : '#F59E0B'} strokeWidth="3"
+                stroke={completionPct > 50 ? '#F5A83E' : '#F59E0B'} strokeWidth="3"
                 strokeDasharray={`${(completionPct / 100) * 75.4} 75.4`}
               />
             </svg>
-            <div className="absolute inset-0 flex items-center justify-center text-xs font-bold" style={{ color: completionPct > 50 ? '#10B981' : '#F59E0B' }}>
+            <div className="absolute inset-0 flex items-center justify-center text-xs font-bold" style={{ color: completionPct > 50 ? '#F5A83E' : '#F59E0B' }}>
               {completionPct}%
             </div>
           </div>
@@ -131,12 +131,12 @@ function VersionCard({ version, isSelected, onSelect, onViewArtifact, onUpdateLi
               {/* Artifact buttons */}
               <div className="flex flex-wrap gap-2">
                 {version.artifacts?.prd && (
-                  <button onClick={() => onViewArtifact(version, 'prd')} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors">
+                  <button onClick={() => onViewArtifact(version, 'prd')} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-[#F5A83E]/10 border border-[#F5A83E]/20 text-[#F5A83E] hover:bg-[#F5A83E]/20 transition-colors">
                     <FileText className="w-3 h-3" /> PRD v{version.semver}
                   </button>
                 )}
                 {version.artifacts?.architecture && (
-                  <button onClick={() => onViewArtifact(version, 'architecture')} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-forge-cyan hover:bg-cyan-500/20 transition-colors">
+                  <button onClick={() => onViewArtifact(version, 'architecture')} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-forge-whisper/10 border border-forge-whisper/20 text-forge-whisper hover:bg-forge-whisper/20 transition-colors">
                     <Layers className="w-3 h-3" /> Architecture v{version.semver}
                   </button>
                 )}
@@ -162,7 +162,7 @@ function VersionCard({ version, isSelected, onSelect, onViewArtifact, onUpdateLi
                 </div>
                 <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
                   <motion.div
-                    className="h-full rounded-full bg-emerald-500"
+                    className="h-full rounded-full bg-forge-amber"
                     initial={{ width: 0 }}
                     animate={{ width: `${completionPct}%` }}
                     transition={{ duration: 0.6 }}

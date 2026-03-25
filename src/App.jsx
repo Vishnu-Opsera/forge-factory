@@ -7,8 +7,10 @@ import Results from './components/Results/index.jsx';
 import ALMDashboard from './components/alm/ALMDashboard.jsx';
 import ApprovalReview from './components/ApprovalReview.jsx';
 import SharedALMView from './components/SharedALMView.jsx';
-import { createProject, saveNewVersion, loadProjects, getProject } from './store/almStore.js';
+import AuthModal from './components/AuthModal.jsx';
+import { createProject, saveNewVersion, loadProjects } from './store/almStore.js';
 import { getShareToken, incrementShareViews } from './store/shareStore.js';
+import { getSession } from './store/authStore.js';
 
 export const PAGES = { HERO: 'hero', INPUT: 'input', PIPELINE: 'pipeline', RESULTS: 'results', ALM: 'alm', APPROVAL: 'approval', SHARED: 'shared' };
 
@@ -18,7 +20,6 @@ function getUrlParam(key) {
 
 export default function App() {
   const [page, setPage] = useState(() => {
-    // Check URL params on initial load
     if (getUrlParam('approve')) return PAGES.APPROVAL;
     if (getUrlParam('share')) return PAGES.SHARED;
     return PAGES.HERO;
@@ -30,11 +31,24 @@ export default function App() {
   const [baseline, setBaseline] = useState(null);
   const [approvalId] = useState(() => getUrlParam('approve'));
   const [shareTokenId] = useState(() => getUrlParam('share'));
+  const [session, setSession] = useState(() => getSession());
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingForgeData, setPendingForgeData] = useState(null);
 
-  // Track share view
   useEffect(() => {
     if (shareTokenId) incrementShareViews(shareTokenId);
   }, [shareTokenId]);
+
+  useEffect(() => {
+    const handleLogout = () => setSession(null);
+    const handleShowAuth = () => setShowAuthModal(true);
+    window.addEventListener('forge:logout', handleLogout);
+    window.addEventListener('forge:show-auth', handleShowAuth);
+    return () => {
+      window.removeEventListener('forge:logout', handleLogout);
+      window.removeEventListener('forge:show-auth', handleShowAuth);
+    };
+  }, []);
 
   const startForge = useCallback((input, selectedMode, files = []) => {
     setPipelineInput(input);
@@ -45,17 +59,36 @@ export default function App() {
   }, []);
 
   const onComplete = useCallback((data) => {
-    setForgeData(data);
-    setPage(PAGES.RESULTS);
-
-    // ── Auto-save to ALM — each forge creates its own project ────────────
+    // Auto-save to ALM
     try {
       const p = createProject(null, data);
       saveNewVersion(p.id, { ...data, mode }, 'minor', {}, '');
     } catch (e) {
       console.warn('ALM auto-save failed:', e.message);
     }
+
+    const currentSession = getSession();
+    if (currentSession) {
+      // Already logged in — go straight to results
+      setForgeData(data);
+      setPage(PAGES.RESULTS);
+    } else {
+      // Gate results behind auth
+      setPendingForgeData(data);
+      setShowAuthModal(true);
+    }
   }, [mode]);
+
+  const handleAuth = useCallback((newSession) => {
+    setSession(newSession);
+    setShowAuthModal(false);
+    window.dispatchEvent(new CustomEvent('forge:login'));
+    if (pendingForgeData) {
+      setForgeData(pendingForgeData);
+      setPendingForgeData(null);
+      setPage(PAGES.RESULTS);
+    }
+  }, [pendingForgeData]);
 
   const reset = useCallback(() => {
     setPage(PAGES.HERO);
@@ -63,6 +96,7 @@ export default function App() {
     setPipelineInput('');
     setPipelineFiles([]);
     setBaseline(null);
+    setPendingForgeData(null);
   }, []);
 
   const startFromBaseline = useCallback((baselineData) => {
@@ -71,7 +105,6 @@ export default function App() {
   }, []);
 
   const goBack = () => {
-    // Clean up URL params when leaving special pages
     if (page === PAGES.APPROVAL || page === PAGES.SHARED) {
       window.history.pushState({}, '', window.location.pathname);
     }
@@ -97,7 +130,7 @@ export default function App() {
         )}
         {page === PAGES.HERO && (
           <motion.div key="hero" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4 }}>
-            <Hero onStart={() => setPage(PAGES.INPUT)} onALM={() => setPage(PAGES.ALM)} />
+            <Hero onForge={startForge} onALM={() => setPage(PAGES.ALM)} />
           </motion.div>
         )}
         {page === PAGES.INPUT && (
@@ -107,12 +140,12 @@ export default function App() {
         )}
         {page === PAGES.PIPELINE && (
           <motion.div key="pipeline" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
-            <AgentPipeline input={pipelineInput} files={pipelineFiles} mode={mode} onComplete={onComplete} onReset={reset} onBack={() => setPage(PAGES.INPUT)} />
+            <AgentPipeline input={pipelineInput} files={pipelineFiles} mode={mode} onComplete={onComplete} onReset={reset} onBack={() => setPage(PAGES.HERO)} />
           </motion.div>
         )}
         {page === PAGES.RESULTS && forgeData && (
           <motion.div key="results" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
-            <Results data={forgeData} forgeMode={mode} onReset={reset} onEdit={() => setPage(PAGES.INPUT)} onViewALM={() => setPage(PAGES.ALM)} />
+            <Results data={forgeData} forgeMode={mode} onReset={reset} onEdit={() => setPage(PAGES.INPUT)} onViewALM={() => setPage(PAGES.ALM)} session={session} />
           </motion.div>
         )}
         {page === PAGES.ALM && (
@@ -124,6 +157,11 @@ export default function App() {
             />
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* Auth modal — shown after pipeline if not logged in */}
+      <AnimatePresence>
+        {showAuthModal && <AuthModal onAuth={handleAuth} onDismiss={() => setShowAuthModal(false)} />}
       </AnimatePresence>
     </div>
   );

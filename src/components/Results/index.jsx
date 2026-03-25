@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Layout, FileText, CheckSquare, Download, RefreshCw, Edit3, Database, GitBranch, CheckCircle2, Code2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import ThemeToggle from '../ThemeToggle.jsx';
+import LanguageSwitcher from '../LanguageSwitcher.jsx';
+import ProfileMenu from '../ProfileMenu.jsx';
 import ArchitectureTab from './ArchitectureTab.jsx';
 import PRDTab from './PRDTab.jsx';
 import TasksTab from './TasksTab.jsx';
@@ -8,14 +12,22 @@ import TechSpecTab from './TechSpecTab.jsx';
 import SaveToALMModal from '../alm/SaveToALMModal.jsx';
 import { useALM } from '../../hooks/useALM.js';
 
-const TABS = [
-  { id: 'architecture', label: 'Architecture', icon: Layout, color: '#06B6D4' },
-  { id: 'prd', label: 'PRD', icon: FileText, color: '#10B981' },
-  { id: 'techspec', label: 'Tech Spec', icon: Code2, color: '#6366F1' },
-  { id: 'tasks', label: 'Sprint Tasks', icon: CheckSquare, color: '#F59E0B' },
+const TAB_DEFS = [
+  { id: 'architecture', labelKey: 'results.architecture', icon: Layout, color: '#C2B0F6' },
+  { id: 'prd',          labelKey: 'results.prd',          icon: FileText, color: '#F5A83E' },
+  { id: 'techspec',     labelKey: 'results.techSpec',     icon: Code2, color: '#6366F1' },
+  { id: 'tasks',        labelKey: 'results.sprintTasks',  icon: CheckSquare, color: '#F59E0B' },
 ];
 
-export default function Results({ data, forgeMode, onReset, onEdit, onViewALM }) {
+function timestamp() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+}
+
+export default function Results({ data, forgeMode, onReset, onEdit, onViewALM, session }) {
+  const { t } = useTranslation();
+  const TABS = TAB_DEFS.map(tab => ({ ...tab, label: t(tab.labelKey) }));
   const [activeTab, setActiveTab] = useState('architecture');
   const [showALMModal, setShowALMModal] = useState(false);
   const [almSaved, setAlmSaved] = useState(false);
@@ -28,18 +40,19 @@ export default function Results({ data, forgeMode, onReset, onEdit, onViewALM })
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'forge-prd.md';
+    a.download = `forge-prd_${timestamp()}.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const handleDownloadTasks = () => {
     const tasks = typeof data.tasks === 'string' ? data.tasks : JSON.stringify(data.tasks, null, 2);
-    const blob = new Blob([tasks], { type: 'application/json' });
+    const ext = typeof data.tasks === 'string' ? 'md' : 'json';
+    const blob = new Blob([tasks], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'forge-tasks.json';
+    a.download = `forge-tasks_${timestamp()}.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -59,41 +72,44 @@ export default function Results({ data, forgeMode, onReset, onEdit, onViewALM })
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-slate-800/50 flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-forge-purple to-forge-cyan flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-opsera-plum to-forge-purple flex items-center justify-center">
             <Zap className="w-3.5 h-3.5 text-white" />
           </div>
           <span className="font-bold tracking-tight">FORGE</span>
-          <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-            Forged ✓
+          <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-[#F5A83E]/10 text-[#F5A83E] border border-[#F5A83E]/20 font-medium">
+            {t('results.forgedBadge')}
           </span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <LanguageSwitcher />
+          <ThemeToggle />
+          <ProfileMenu />
           <button onClick={onEdit} className="flex items-center gap-1.5 text-sm btn-secondary py-2 px-3">
             <Edit3 className="w-3.5 h-3.5" />
-            Edit
+            {t('results.edit')}
           </button>
           {almSaved ? (
-            <button onClick={onViewALM} className="flex items-center gap-1.5 text-sm py-2 px-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all">
+            <button onClick={onViewALM} className="flex items-center gap-1.5 text-sm py-2 px-3 rounded-xl border border-[#F5A83E]/30 bg-[#F5A83E]/10 text-[#F5A83E] hover:bg-[#F5A83E]/20 transition-all">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Saved v{latestVersion}
+              {t('results.savedVersion', { version: latestVersion })}
               <GitBranch className="w-3.5 h-3.5 ml-1" />
-              Open ALM
+              {t('results.openALM')}
             </button>
           ) : (
             <button onClick={() => setShowALMModal(true)} className="flex items-center gap-1.5 text-sm btn-secondary py-2 px-3">
               <Database className="w-3.5 h-3.5" />
-              Save to ALM
+              {t('results.saveToALM')}
             </button>
           )}
           {projects.length > 0 && (
             <button onClick={onViewALM} className="flex items-center gap-1.5 text-sm btn-secondary py-2 px-3">
               <GitBranch className="w-3.5 h-3.5" />
-              ALM Dashboard
+              {t('results.almDashboard')}
             </button>
           )}
           <button onClick={onReset} className="flex items-center gap-1.5 text-sm btn-secondary py-2 px-3">
             <RefreshCw className="w-3.5 h-3.5" />
-            New Forge
+            {t('results.newForge')}
           </button>
         </div>
       </nav>
@@ -105,13 +121,13 @@ export default function Results({ data, forgeMode, onReset, onEdit, onViewALM })
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs text-forge-amber font-semibold uppercase tracking-wider">Intent Summary</span>
+                  <span className="text-xs text-forge-amber font-semibold uppercase tracking-wider">{t('results.intentSummary')}</span>
                   {data.intent.complexity && (
                     <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
                       data.intent.complexity === 'high' ? 'priority-high' :
                       data.intent.complexity === 'medium' ? 'priority-medium' : 'priority-low'
                     }`}>
-                      {data.intent.complexity} complexity
+                      {data.intent.complexity} {t('results.complexity')}
                     </span>
                   )}
                 </div>
@@ -119,7 +135,7 @@ export default function Results({ data, forgeMode, onReset, onEdit, onViewALM })
               </div>
               {data.intent.estimated_timeline && (
                 <div className="text-xs text-slate-500 flex-shrink-0">
-                  <span className="text-forge-cyan font-semibold">{data.intent.estimated_timeline}</span> timeline
+                  <span className="text-forge-whisper font-semibold">{data.intent.estimated_timeline}</span> {t('results.timeline')}
                 </div>
               )}
             </div>
@@ -153,7 +169,7 @@ export default function Results({ data, forgeMode, onReset, onEdit, onViewALM })
           <div className="flex-1" />
           {activeTab === 'prd' && (
             <button onClick={handleDownloadPRD} className="flex items-center gap-1.5 text-sm btn-secondary py-2 px-4">
-              <Download className="w-3.5 h-3.5" />Download PRD
+              <Download className="w-3.5 h-3.5" />{t('results.downloadPRD')}
             </button>
           )}
           {activeTab === 'techspec' && data.techspec && (
@@ -162,17 +178,17 @@ export default function Results({ data, forgeMode, onReset, onEdit, onViewALM })
                 const blob = new Blob([data.techspec], { type: 'text/markdown' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.href = url; a.download = 'tech-spec.md'; a.click();
+                a.href = url; a.download = `forge-techspec_${timestamp()}.md`; a.click();
                 URL.revokeObjectURL(url);
               }}
               className="flex items-center gap-1.5 text-sm btn-secondary py-2 px-4"
             >
-              <Download className="w-3.5 h-3.5" />Download Tech Spec
+              <Download className="w-3.5 h-3.5" />{t('results.downloadTechSpec')}
             </button>
           )}
           {activeTab === 'tasks' && (
             <button onClick={handleDownloadTasks} className="flex items-center gap-1.5 text-sm btn-secondary py-2 px-4">
-              <Download className="w-3.5 h-3.5" />Export Tasks
+              <Download className="w-3.5 h-3.5" />{t('results.exportTasks')}
             </button>
           )}
         </div>

@@ -80,7 +80,7 @@ export function MermaidDiagram({ diagram }) {
 
 // ── Tech stack icons ──────────────────────────────────────────────────────────
 const STACK_ICONS = { frontend: Code2, backend: Server, database: Database, infrastructure: Cloud, ai_ml: Cpu };
-const STACK_COLORS = { frontend: '#8B5CF6', backend: '#06B6D4', database: '#10B981', infrastructure: '#F59E0B', ai_ml: '#EC4899' };
+const STACK_COLORS = { frontend: '#8B5CF6', backend: '#C2B0F6', database: '#F5A83E', infrastructure: '#F59E0B', ai_ml: '#EC4899' };
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function ArchitectureTab({ data }) {
@@ -94,10 +94,10 @@ export default function ArchitectureTab({ data }) {
       {data.mermaid && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
           <div className="flex items-center gap-2 mb-4">
-            <Layers className="w-4 h-4 text-forge-cyan" />
+            <Layers className="w-4 h-4 text-forge-whisper" />
             <span className="font-semibold text-white text-sm">System Architecture</span>
             {data.style && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-forge-cyan/10 text-forge-cyan border border-forge-cyan/20">{data.style}</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-forge-whisper/10 text-forge-whisper border border-forge-whisper/20">{data.style}</span>
             )}
           </div>
           <MermaidDiagram diagram={data.mermaid} />
@@ -137,17 +137,17 @@ export default function ArchitectureTab({ data }) {
       {data.key_decisions?.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-6">
           <h3 className="font-semibold text-white text-sm mb-4 flex items-center gap-2">
-            <Server className="w-4 h-4 text-forge-emerald" />Architectural Decisions
+            <Server className="w-4 h-4 text-forge-amber" />Architectural Decisions
           </h3>
           <div className="space-y-3">
             {data.key_decisions.map((d, i) => (
               <div key={i} className="flex gap-3">
-                <div className="w-6 h-6 rounded-full bg-forge-emerald/10 border border-forge-emerald/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-xs font-bold text-forge-emerald">{i + 1}</span>
+                <div className="w-6 h-6 rounded-full bg-forge-amber/10 border border-forge-amber/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold text-forge-amber">{i + 1}</span>
                 </div>
                 <div>
                   <div className="font-semibold text-slate-200 text-sm">{d.title || d.decision || d.choice || 'Decision'}</div>
-                  {d.choice && <div className="text-xs text-forge-cyan mt-0.5">{d.choice}</div>}
+                  {d.choice && <div className="text-xs text-forge-whisper mt-0.5">{d.choice}</div>}
                   {d.rationale && <div className="text-xs text-slate-500 mt-0.5 leading-relaxed">{d.rationale}</div>}
                 </div>
               </div>
@@ -160,8 +160,8 @@ export default function ArchitectureTab({ data }) {
       {(data.api_design || data.deployment || data.estimated_cost) && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="flex gap-4">
           {data.api_design && <div className="glass-card p-4 flex-1 text-center"><div className="text-lg font-black text-forge-purple">{data.api_design}</div><div className="text-xs text-slate-500 mt-1">API Design</div></div>}
-          {data.deployment && <div className="glass-card p-4 flex-1 text-center"><div className="text-lg font-black text-forge-cyan capitalize">{data.deployment}</div><div className="text-xs text-slate-500 mt-1">Deployment</div></div>}
-          {data.estimated_cost && <div className="glass-card p-4 flex-1 text-center"><div className="text-lg font-black text-forge-emerald">{data.estimated_cost}</div><div className="text-xs text-slate-500 mt-1">Est. Cost</div></div>}
+          {data.deployment && <div className="glass-card p-4 flex-1 text-center"><div className="text-lg font-black text-forge-whisper capitalize">{data.deployment}</div><div className="text-xs text-slate-500 mt-1">Deployment</div></div>}
+          {data.estimated_cost && <div className="glass-card p-4 flex-1 text-center"><div className="text-lg font-black text-forge-amber">{data.estimated_cost}</div><div className="text-xs text-slate-500 mt-1">Est. Cost</div></div>}
         </motion.div>
       )}
     </div>

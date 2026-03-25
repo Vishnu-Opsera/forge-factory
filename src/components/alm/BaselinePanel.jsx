@@ -29,7 +29,7 @@ function ArtifactRef({ refCode, type, label, color, icon: Icon, onView }) {
       </div>
       <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <button onClick={copy} className="p-1 text-slate-500 hover:text-white transition-colors">
-          {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+          {copied ? <Check className="w-3.5 h-3.5 text-[#F5A83E]" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
         {onView && (
           <button onClick={onView} className="p-1 text-slate-500 hover:text-white transition-colors">
@@ -236,7 +236,7 @@ export default function BaselinePanel({ onStartFromBaseline }) {
                 refCode={`${activeResult.version.ref}-PRD`}
                 type="prd"
                 label="PRD Document"
-                color="#10B981"
+                color="#F5A83E"
                 icon={FileText}
                 onView={activeResult.version.artifacts?.prd ? () => setPreview({ version: activeResult.version, artifact: 'prd' }) : null}
               />
@@ -244,7 +244,7 @@ export default function BaselinePanel({ onStartFromBaseline }) {
                 refCode={`${activeResult.version.ref}-ARCH`}
                 type="architecture"
                 label="Architecture"
-                color="#06B6D4"
+                color="#C2B0F6"
                 icon={Layers}
                 onView={activeResult.version.artifacts?.architecture ? () => setPreview({ version: activeResult.version, artifact: 'architecture' }) : null}
               />
@@ -268,7 +268,7 @@ export default function BaselinePanel({ onStartFromBaseline }) {
                   </a>
                 )}
                 {activeResult.version.links.commit_sha && (
-                  <span className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg text-forge-cyan bg-forge-cyan/10 border border-forge-cyan/20 font-mono">
+                  <span className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg text-forge-whisper bg-forge-whisper/10 border border-forge-whisper/20 font-mono">
                     <Code2 className="w-3 h-3" />{activeResult.version.links.commit_sha.slice(0, 8)}
                   </span>
                 )}

@@ -4,8 +4,8 @@ import { X, Database, GitBranch, GitCommit, Zap, ChevronRight, ExternalLink, Plu
 import { nextVersions } from '../../store/almStore.js';
 
 const BUMP_OPTIONS = [
-  { type: 'patch', label: 'Patch', desc: 'Bug fixes, minor tweaks', color: '#10B981' },
-  { type: 'minor', label: 'Minor', desc: 'New features, non-breaking', color: '#06B6D4' },
+  { type: 'patch', label: 'Patch', desc: 'Bug fixes, minor tweaks', color: '#F5A83E' },
+  { type: 'minor', label: 'Minor', desc: 'New features, non-breaking', color: '#C2B0F6' },
   { type: 'major', label: 'Major', desc: 'Breaking changes, redesign', color: '#8B5CF6' },
 ];
 
@@ -63,7 +63,7 @@ export default function SaveToALMModal({ data, currentVersion, projects, onSave,
       >
         {saved ? (
           <div className="p-8 text-center">
-            <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
+            <CheckCircle2 className="w-12 h-12 text-[#F5A83E] mx-auto mb-3" />
             <div className="text-lg font-bold text-white">Saved to ALM</div>
             <div className="text-sm text-slate-400 mt-1">Version {versions[bumpType]} created</div>
           </div>
@@ -166,7 +166,7 @@ export default function SaveToALMModal({ data, currentVersion, projects, onSave,
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="What changed in this version?"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 outline-none focus:border-forge-cyan/50"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 outline-none focus:border-forge-whisper/50"
                 />
               </div>
 

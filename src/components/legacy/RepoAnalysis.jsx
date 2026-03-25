@@ -9,15 +9,15 @@ import {
 const SEVERITY_CONFIG = {
   critical: { icon: AlertCircle, color: '#EF4444', bg: 'bg-red-500/10', border: 'border-red-500/20', label: 'Critical' },
   high: { icon: AlertTriangle, color: '#F59E0B', bg: 'bg-amber-500/10', border: 'border-amber-500/20', label: 'High' },
-  medium: { icon: Info, color: '#06B6D4', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', label: 'Medium' },
-  low: { icon: CheckCircle2, color: '#10B981', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', label: 'Low' },
+  medium: { icon: Info, color: '#C2B0F6', bg: 'bg-forge-whisper/10', border: 'border-forge-whisper/20', label: 'Medium' },
+  low: { icon: CheckCircle2, color: '#F5A83E', bg: 'bg-[#F5A83E]/10', border: 'border-[#F5A83E]/20', label: 'Low' },
 };
 
 const PRIORITY_COLORS = {
   critical: '#EF4444',
   high: '#F59E0B',
   medium: '#8B5CF6',
-  low: '#10B981',
+  low: '#F5A83E',
 };
 
 const CATEGORY_ICONS = {
@@ -33,8 +33,8 @@ const CATEGORY_ICONS = {
 const QUALITY_CONFIG = {
   poor: { color: '#EF4444', label: 'Poor', bar: 15 },
   fair: { color: '#F59E0B', label: 'Fair', bar: 45 },
-  good: { color: '#10B981', label: 'Good', bar: 75 },
-  excellent: { color: '#06B6D4', label: 'Excellent', bar: 95 },
+  good: { color: '#F5A83E', label: 'Good', bar: 75 },
+  excellent: { color: '#C2B0F6', label: 'Excellent', bar: 95 },
 };
 
 const COMPLEXITY_LABELS = {
@@ -110,8 +110,8 @@ export default function RepoAnalysis({ data, onForge, onSkip }) {
       className="space-y-4"
     >
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 glass-card border-emerald-500/20">
-        <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+      <div className="flex items-center gap-3 p-4 glass-card border-[#F5A83E]/20">
+        <CheckCircle2 className="w-5 h-5 text-[#F5A83E] flex-shrink-0" />
         <div className="flex-1">
           <div className="font-bold text-white">{data.repo_name || 'Repository Analyzed'}</div>
           <div className="text-sm text-slate-500">{data.description || 'Analysis complete'}</div>
@@ -159,8 +159,8 @@ export default function RepoAnalysis({ data, onForge, onSkip }) {
           </div>
           <div className="flex flex-wrap gap-2">
             {(data.tech_stack?.languages || []).map((l) => <TechBadge key={l} label={l} color="#8B5CF6" />)}
-            {(data.tech_stack?.frameworks || []).map((f) => <TechBadge key={f} label={f} color="#06B6D4" />)}
-            {(data.tech_stack?.databases || []).map((d) => <TechBadge key={d} label={d} color="#10B981" />)}
+            {(data.tech_stack?.frameworks || []).map((f) => <TechBadge key={f} label={f} color="#C2B0F6" />)}
+            {(data.tech_stack?.databases || []).map((d) => <TechBadge key={d} label={d} color="#F5A83E" />)}
             {(data.tech_stack?.infrastructure || []).map((i) => <TechBadge key={i} label={i} color="#F59E0B" />)}
             {(data.tech_stack?.build_tools || []).map((b) => <TechBadge key={b} label={b} color="#94A3B8" />)}
           </div>
@@ -176,7 +176,7 @@ export default function RepoAnalysis({ data, onForge, onSkip }) {
           </div>
         )}
         {data.migration_strategy && (
-          <div className="flex items-center gap-1.5 text-xs text-forge-cyan bg-forge-cyan/5 border border-forge-cyan/20 px-3 py-1.5 rounded-xl">
+          <div className="flex items-center gap-1.5 text-xs text-forge-whisper bg-forge-whisper/5 border border-forge-whisper/20 px-3 py-1.5 rounded-xl">
             <GitBranch className="w-3 h-3" />
             {data.migration_strategy.replace('-', ' ')}
           </div>

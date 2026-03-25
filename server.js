@@ -43,7 +43,7 @@ function parseJSON(text) {
 
 const AGENT_PROMPTS = {
   intent: {
-    name: 'Triage',
+    name: 'triage',
     icon: '🔮',
     system: `You are Triage — the requirements intelligence agent for Forge Platform, an AI-powered software modernization platform.
 Analyze the user's input and return ONLY valid JSON (no markdown, no explanation) with this exact structure:
@@ -61,7 +61,7 @@ Analyze the user's input and return ONLY valid JSON (no markdown, no explanation
 Return at least 5 core features. Be specific and actionable.`,
   },
   architecture: {
-    name: 'Drafthouse',
+    name: 'drafthouse',
     icon: '⚙️',
     system: `You are Drafthouse — the architecture design agent for Forge Platform.
 Design the technical architecture and return ONLY valid JSON with this structure:
@@ -85,7 +85,7 @@ Design the technical architecture and return ONLY valid JSON with this structure
 For mermaid: use flowchart TD, include at least 8 nodes showing frontend, API, services, and database layers. Use proper Mermaid syntax with --> arrows and [label] nodes.`,
   },
   prd: {
-    name: 'Press',
+    name: 'press',
     icon: '📜',
     system: `You are Press — the documentation agent for Forge Platform. Generate a comprehensive, professional Product Requirements Document in markdown.
 
@@ -136,7 +136,7 @@ Structure:
 Be detailed, professional, and actionable. This should be ready for stakeholder review.`,
   },
   techspec: {
-    name: 'Blueprint',
+    name: 'blueprint',
     icon: '🔧',
     system: `You are Blueprint — the engineering specification agent for Forge Platform.
 Generate a comprehensive Technical Specification document in markdown for engineering teams.
@@ -195,7 +195,7 @@ Structure it as follows:
 Be specific, technical, and immediately actionable by an engineering team. Reference the actual tech stack from the architecture.`,
   },
   tasks: {
-    name: 'Mill',
+    name: 'mill',
     icon: '⚡',
     system: `You are Mill — the sprint planning agent for Forge Platform.
 Break requirements into actionable development work orders. Output in this exact markdown format — no JSON, no preamble:
@@ -247,7 +247,7 @@ function buildMessageContent(textContent, files = []) {
 }
 
 app.post('/api/forge', async (req, res) => {
-  const { input, mode, files = [] } = req.body;
+  const { input, mode, files = [], resumeFrom, previousResults = {}, feedback = '' } = req.body;
   if (!input?.trim() && files.length === 0) return res.status(400).json({ error: 'Input is required' });
   if (!process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
 
@@ -286,40 +286,64 @@ app.post('/api/forge', async (req, res) => {
     return result;
   };
 
+  // Agents in order
+  const AGENT_ORDER = ['intent', 'architecture', 'prd', 'techspec', 'tasks'];
+  const resumeIndex = resumeFrom ? AGENT_ORDER.indexOf(resumeFrom) : 0;
+
+  // Effective input with optional feedback injected
+  const feedbackNote = feedback.trim()
+    ? `\n\n[USER FEEDBACK — Please incorporate this into your output]:\n${feedback.trim()}`
+    : '';
+  const effectiveInput = input + feedbackNote;
+
   try {
     const modeLabel = mode === 'legacy' ? 'Legacy Modernization' : 'New Product Development';
 
-    // Agent 1: Triage — include any attached files (images/docs) in first message
-    const intentRaw = await runAgent('intent', [{
-      role: 'user',
-      content: buildMessageContent(
-        `Analyze this project idea for ${modeLabel}:\n\n${input}`,
-        files
-      ),
-    }]);
+    // For agents before resumeIndex, use previousResults (no SSE events — already shown in UI)
+    let intentRaw  = resumeIndex > 0 ? (previousResults.intent        || '') : '';
+    let archRaw    = resumeIndex > 1 ? (previousResults.architecture   || '') : '';
+    let prdRaw     = resumeIndex > 2 ? (previousResults.prd            || '') : '';
+    let techspecRaw = resumeIndex > 3 ? (previousResults.techspec      || '') : '';
+
+    // Agent 1: Triage
+    if (resumeIndex <= 0) {
+      intentRaw = await runAgent('intent', [{
+        role: 'user',
+        content: buildMessageContent(
+          `Analyze this project idea for ${modeLabel}:\n\n${effectiveInput}`,
+          files
+        ),
+      }]);
+    }
 
     // Agent 2: Drafthouse
-    const archRaw = await runAgent('architecture', [{
-      role: 'user',
-      content: `Design the architecture for this product.\n\nRequirements analysis:\n${intentRaw}\n\nOriginal input:\n${input}`,
-    }]);
+    if (resumeIndex <= 1) {
+      archRaw = await runAgent('architecture', [{
+        role: 'user',
+        content: `Design the architecture for this product.\n\nRequirements analysis:\n${intentRaw}\n\nOriginal input:\n${effectiveInput}`,
+      }]);
+    }
 
     // Agent 3: Press
-    const prdRaw = await runAgent('prd', [{
-      role: 'user',
-      content: `Generate a PRD.\n\nRequirements:\n${intentRaw}\n\nArchitecture:\n${archRaw}\n\nOriginal input:\n${input}`,
-    }]);
+    if (resumeIndex <= 2) {
+      prdRaw = await runAgent('prd', [{
+        role: 'user',
+        content: `Generate a PRD.\n\nRequirements:\n${intentRaw}\n\nArchitecture:\n${archRaw}\n\nOriginal input:\n${effectiveInput}`,
+      }]);
+    }
 
-    // Agent 4: Blueprint — tech spec for engineering teams
-    const techspecRaw = await runAgent('techspec', [{
-      role: 'user',
-      content: `Generate a Technical Specification for engineering teams.\n\nRequirements:\n${intentRaw}\n\nArchitecture:\n${archRaw}\n\nPRD:\n${prdRaw}`,
-    }]);
+    // Agent 4: Blueprint
+    if (resumeIndex <= 3) {
+      techspecRaw = await runAgent('techspec', [{
+        role: 'user',
+        content: `Generate a Technical Specification for engineering teams.\n\nRequirements:\n${intentRaw}\n\nArchitecture:\n${archRaw}\n\nPRD:\n${prdRaw}${feedbackNote}`,
+      }]);
+    }
 
     // Agent 5: Mill
     const tasksRaw = await runAgent('tasks', [{
       role: 'user',
-      content: `Generate development tasks.\n\nRequirements:\n${intentRaw}\n\nArchitecture:\n${archRaw}`,
+      content: `Generate development tasks.\n\nRequirements:\n${intentRaw}\n\nArchitecture:\n${archRaw}${feedbackNote}`,
     }]);
 
     const intentData = parseJSON(intentRaw);

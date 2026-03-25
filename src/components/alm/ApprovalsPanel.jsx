@@ -12,9 +12,9 @@ import { getProject } from '../../store/almStore.js';
 
 const STATUS_CONFIG = {
   pending:           { label: 'Pending',            color: '#F59E0B', icon: Clock },
-  approved:          { label: 'Approved',            color: '#10B981', icon: CheckCircle2 },
+  approved:          { label: 'Approved',            color: '#F5A83E', icon: CheckCircle2 },
   rejected:          { label: 'Rejected',            color: '#EF4444', icon: XCircle },
-  changes_requested: { label: 'Changes Requested',  color: '#06B6D4', icon: MessageSquare },
+  changes_requested: { label: 'Changes Requested',  color: '#C2B0F6', icon: MessageSquare },
 };
 
 function ApprovalCard({ approval, onDelete, baseUrl }) {
@@ -53,7 +53,7 @@ function ApprovalCard({ approval, onDelete, baseUrl }) {
         </div>
         <div className="flex items-center gap-1.5">
           <button onClick={copy} className="p-1.5 text-slate-500 hover:text-white transition-colors rounded-lg hover:bg-slate-800">
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-[#F5A83E]" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
           <button onClick={() => setExpanded(!expanded)} className="p-1.5 text-slate-500 hover:text-white transition-colors rounded-lg hover:bg-slate-800">
             {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -73,7 +73,7 @@ function ApprovalCard({ approval, onDelete, baseUrl }) {
               <div className="flex items-center gap-2 bg-slate-900 rounded-xl px-3 py-2 border border-slate-700/60">
                 <span className="text-xs font-mono text-slate-400 truncate flex-1">{approvalUrl}</span>
                 <button onClick={copy} className="text-slate-500 hover:text-white transition-colors flex-shrink-0">
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? <Check className="w-3.5 h-3.5 text-[#F5A83E]" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>

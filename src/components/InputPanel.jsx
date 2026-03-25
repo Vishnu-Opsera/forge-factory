@@ -138,7 +138,7 @@ export default function InputPanel({ onForge, onBack, baseline, onClearBaseline 
           <ArrowLeft className="w-4 h-4" />Back
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-forge-purple to-forge-cyan flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-opsera-plum to-forge-purple flex items-center justify-center">
             <Zap className="w-3.5 h-3.5 text-white" />
           </div>
           <span className="font-bold tracking-tight">FORGE</span>

@@ -1,0 +1,36 @@
+{
+  "nav": { "alm": "ALM仪表板", "newForge": "新建锻造", "back": "返回", "beta": "测试版" },
+  "hero": {
+    "badge": "AI驱动的软件现代化",
+    "headline": "我们要",
+    "headlineAccent": "构建什么？",
+    "subtitleNew": "描述您的想法，粘贴需求，或附上文档、图片或电子表格。",
+    "subtitleLegacy": "上传代码、粘贴GitHub URL或拖放ZIP — AI将自动分析。",
+    "modeNew": "新产品",
+    "modeLegacy": "现代化遗留系统",
+    "attachFiles": "附加文件",
+    "fileTypes": "图片、XLS、CSV、PDF、文档",
+    "shortcut": "⌘↵ 开始锻造",
+    "forgeButton": "锻造 — 启动AI代理",
+    "tryExample": "试试示例",
+    "footer": "Forge平台 — 第0天：开发 · 第1天：部署 · 第2天：监控"
+  },
+  "agents": {
+    "classifier": "分类器",
+    "classifierDesc": "对需求进行分类和结构化",
+    "architect": "架构师",
+    "architectDesc": "设计系统架构和技术栈",
+    "composer": "编写者",
+    "composerDesc": "编写生产级需求文档",
+    "specifier": "规格制定者",
+    "specifierDesc": "制定工程级技术规格",
+    "planner": "规划者",
+    "plannerDesc": "规划可用于冲刺的开发工作单"
+  },
+  "pipeline": { "running": "运行中", "done": "完成", "pending": "等待中", "stopped": "已停止", "stopAll": "停止", "complete": "准备开发。", "modernizeComplete": "现代化计划已就绪。", "generating": "生成中" },
+  "results": { "architecture": "架构", "prd": "产品需求", "techSpec": "技术规格", "sprintTasks": "冲刺任务", "downloadPRD": "下载PRD", "downloadTechSpec": "下载技术规格", "exportTasks": "导出任务", "edit": "编辑", "saveToALM": "保存到ALM", "almDashboard": "ALM仪表板", "newForge": "新建锻造", "intentSummary": "意图摘要", "complexity": "复杂度", "timeline": "时间线" },
+  "alm": { "timeline": "时间轴", "features": "功能", "stories": "用户故事", "insights": "洞察", "baseline": "基线", "approvals": "审批", "connectIDE": "连接IDE", "projects": "项目", "settings": "设置", "noProjects": "暂无锻造的应用。", "startForging": "开始锻造", "noProjectSelected": "请选择项目。", "versions": "版本", "version": "版本", "features_count": "功能", "storiesDone": "故事已完成" },
+  "stories": { "backlog": "待办", "inProgress": "进行中", "inReview": "审核中", "completed": "已完成", "removed": "已移除", "allVersions": "所有版本", "allEpics": "所有史诗", "stories": "故事", "noStories": "未找到故事", "storyPoints": "故事点", "sprint": "冲刺", "priority": "优先级", "type": "类型", "tags": "标签", "userStory": "用户故事", "workDescription": "工作描述", "acceptanceCriteria": "验收标准", "noTasksGenerated": "未生成任务。", "expandAll": "展开全部", "collapseAll": "折叠全部" },
+  "auth": { "login": "登录", "register": "创建账户", "loginTitle": "欢迎回来。", "registerTitle": "最后一步。", "loginSubtitle": "登录以访问完整的AI生成套件。", "registerSubtitle": "创建免费账户以访问。", "name": "全名", "email": "电子邮件", "password": "密码", "confirmPassword": "确认密码", "namePlaceholder": "您的姓名", "emailPlaceholder": "您@公司.com", "passwordPlaceholder": "至少6个字符", "loginButton": "登录并查看结果", "registerButton": "创建账户并查看结果", "switchToRegister": "还没有账户？", "switchToLogin": "已有账户？", "createFree": "免费创建", "loginLink": "登录", "autofillHint": "浏览器保存的密码可在此使用", "resultsReady": "您的结果已准备好", "perk1": "查看完整PRD、技术规格和冲刺任务", "perk2": "通过MCP连接IDE", "perk3": "在ALM中跟踪进度", "perk4": "共享和审批工件" },
+  "common": { "loading": "加载中...", "error": "错误", "cancel": "取消", "save": "保存", "copy": "复制", "copied": "已复制", "share": "分享", "delete": "删除", "edit": "编辑", "close": "关闭", "regenerate": "重新生成", "language": "语言" }
+}
