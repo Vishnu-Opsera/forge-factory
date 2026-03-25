@@ -32,6 +32,14 @@ const AGENTS = [
     expectedChars: 14000,
   },
   {
+    key: 'techspec',
+    name: 'Blueprint',
+    icon: '🔧',
+    desc: 'Writing engineering-level technical specification',
+    color: '#6366F1',
+    expectedChars: 14000,
+  },
+  {
     key: 'tasks',
     name: 'Mill',
     icon: '⚡',
@@ -164,11 +172,12 @@ function AgentCard({ agent, status, streamText, elapsed, isExpanded, onToggle })
   );
 }
 
-export default function AgentPipeline({ input, mode, onComplete, onReset, onBack }) {
+export default function AgentPipeline({ input, files = [], mode, onComplete, onReset, onBack }) {
   const [agentStates, setAgentStates] = useState({
     intent: { status: 'pending', text: '', elapsed: null },
     architecture: { status: 'pending', text: '', elapsed: null },
     prd: { status: 'pending', text: '', elapsed: null },
+    techspec: { status: 'pending', text: '', elapsed: null },
     tasks: { status: 'pending', text: '', elapsed: null },
   });
   const [isStopped, setIsStopped] = useState(false);
@@ -200,7 +209,7 @@ export default function AgentPipeline({ input, mode, onComplete, onReset, onBack
     fetch('/api/forge', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input: input + correctionNote, mode }),
+      body: JSON.stringify({ input: input + correctionNote, mode, files }),
       signal: controller.signal,
     }).then(async (res) => {
       if (!res.ok) {

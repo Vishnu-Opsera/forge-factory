@@ -94,7 +94,21 @@ export function loadProjects() {
   catch { return []; }
 }
 
-function persist(projects) { localStorage.setItem(KEY, JSON.stringify(projects)); }
+function persist(projects) {
+  localStorage.setItem(KEY, JSON.stringify(projects));
+  fetch('/api/alm/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projects }) }).catch(() => {});
+}
+
+// Local-only persist — used by inbound server sync to avoid echo loop
+function persistLocal(projects) { localStorage.setItem(KEY, JSON.stringify(projects)); }
+
+export function updateStoryStatusLocal(projectId, versionId, storyId, status, notes) {
+  const projects = loadProjects();
+  const ver = projects.find(p => p.id === projectId)?.versions.find(v => v.id === versionId);
+  if (!ver) return;
+  ver.story_statuses[storyId] = { status, updated_at: new Date().toISOString(), notes: notes || null };
+  persistLocal(projects);
+}
 
 export function getProject(id) { return loadProjects().find(p => p.id === id) || null; }
 

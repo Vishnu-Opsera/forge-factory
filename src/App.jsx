@@ -26,6 +26,7 @@ export default function App() {
   const [mode, setMode] = useState('new_product');
   const [forgeData, setForgeData] = useState(null);
   const [pipelineInput, setPipelineInput] = useState('');
+  const [pipelineFiles, setPipelineFiles] = useState([]);
   const [baseline, setBaseline] = useState(null);
   const [approvalId] = useState(() => getUrlParam('approve'));
   const [shareTokenId] = useState(() => getUrlParam('share'));
@@ -35,8 +36,9 @@ export default function App() {
     if (shareTokenId) incrementShareViews(shareTokenId);
   }, [shareTokenId]);
 
-  const startForge = useCallback((input, selectedMode) => {
+  const startForge = useCallback((input, selectedMode, files = []) => {
     setPipelineInput(input);
+    setPipelineFiles(files);
     setMode(selectedMode);
     setForgeData(null);
     setPage(PAGES.PIPELINE);
@@ -59,6 +61,7 @@ export default function App() {
     setPage(PAGES.HERO);
     setForgeData(null);
     setPipelineInput('');
+    setPipelineFiles([]);
     setBaseline(null);
   }, []);
 
@@ -104,7 +107,7 @@ export default function App() {
         )}
         {page === PAGES.PIPELINE && (
           <motion.div key="pipeline" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
-            <AgentPipeline input={pipelineInput} mode={mode} onComplete={onComplete} onReset={reset} onBack={() => setPage(PAGES.INPUT)} />
+            <AgentPipeline input={pipelineInput} files={pipelineFiles} mode={mode} onComplete={onComplete} onReset={reset} onBack={() => setPage(PAGES.INPUT)} />
           </motion.div>
         )}
         {page === PAGES.RESULTS && forgeData && (

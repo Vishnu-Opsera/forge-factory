@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Circle, Clock, Trash2, Star, ChevronDown, Filter } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Trash2, Star, ChevronDown, Filter, GitPullRequest } from 'lucide-react';
 
 const STATUSES = [
   { id: 'not_developed', label: 'Backlog', color: '#94A3B8', bg: 'bg-slate-500/10', border: 'border-slate-500/20', icon: Circle },
   { id: 'in_progress', label: 'In Progress', color: '#F59E0B', bg: 'bg-amber-500/10', border: 'border-amber-500/20', icon: Clock },
+  { id: 'in_review', label: 'In Review', color: '#6366F1', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', icon: GitPullRequest },
   { id: 'completed', label: 'Completed', color: '#10B981', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', icon: CheckCircle2 },
   { id: 'removed', label: 'Removed', color: '#EF4444', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: Trash2 },
 ];

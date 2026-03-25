@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Zap, ArrowLeft, GitBranch, BarChart3, CheckSquare,
-  Clock, Plus, Package, Layers, Settings, Send, Share2,
+  Clock, Plus, Package, Layers, Settings, Send, Share2, Terminal,
 } from 'lucide-react';
 import { useALM } from '../../hooks/useALM.js';
 import { getInsights } from '../../store/almStore.js';
@@ -14,6 +14,7 @@ import BaselinePanel from './BaselinePanel.jsx';
 import SettingsPanel from './SettingsPanel.jsx';
 import ApprovalsPanel from './ApprovalsPanel.jsx';
 import ShareModal from '../ShareModal.jsx';
+import ConnectIDEPanel from './ConnectIDEPanel.jsx';
 
 // Artifact viewer — shows PRD/architecture/tasks from a stored version
 import { lazy, Suspense } from 'react';
@@ -29,6 +30,7 @@ const PROJECT_TABS = [
   { id: 'insights',  label: 'Insights',  icon: BarChart3 },
   { id: 'baseline',  label: 'Baseline',  icon: Layers },
   { id: 'approvals', label: 'Approvals', icon: Send },
+  { id: 'connect',   label: 'Connect IDE', icon: Terminal },
 ];
 
 // Global (sidebar-level) sections
@@ -332,6 +334,9 @@ export default function ALMDashboard({ onBack, onNewForge, onStartFromBaseline }
                               projectId={activeProjectId}
                               projectName={activeProject.name}
                             />
+                          )}
+                          {activeTab === 'connect' && (
+                            <ConnectIDEPanel project={activeProject} versions={versions} />
                           )}
                         </motion.div>
                       </AnimatePresence>

@@ -1,6 +1,28 @@
 import express from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import cors from 'cors';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const DATA_DIR = join(__dirname, 'data');
+const PROJECTS_FILE = join(DATA_DIR, 'projects.json');
+const KEYS_FILE = join(DATA_DIR, 'mcp-keys.json');
+if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+
+function readProjects() {
+  try { return JSON.parse(readFileSync(PROJECTS_FILE, 'utf-8')); } catch { return []; }
+}
+function writeProjects(projects) {
+  writeFileSync(PROJECTS_FILE, JSON.stringify(projects, null, 2));
+}
+function readKeys() {
+  try { return JSON.parse(readFileSync(KEYS_FILE, 'utf-8')); } catch { return []; }
+}
+function writeKeys(keys) {
+  writeFileSync(KEYS_FILE, JSON.stringify(keys, null, 2));
+}
 
 const app = express();
 app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost:4173'] }));
@@ -113,6 +135,65 @@ Structure:
 
 Be detailed, professional, and actionable. This should be ready for stakeholder review.`,
   },
+  techspec: {
+    name: 'Blueprint',
+    icon: '🔧',
+    system: `You are Blueprint — the engineering specification agent for Forge Platform.
+Generate a comprehensive Technical Specification document in markdown for engineering teams.
+
+Structure it as follows:
+
+# Technical Specification — [Product Name]
+
+## Overview
+(2-3 sentence technical summary of what's being built and the core architectural approach)
+
+## System Architecture
+(Key architectural patterns, design decisions, and rationale)
+
+## API Contracts
+### Endpoints
+| Method | Path | Description | Auth Required |
+|--------|------|-------------|---------------|
+
+### Key Request / Response Shapes
+(JSON examples for the 3-5 most critical endpoints)
+
+## Data Models
+### [Entity Name]
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+
+(Cover all core entities)
+
+## Component Breakdown
+### Frontend
+(Key components, responsibilities, state management strategy)
+
+### Backend Services
+(Services/modules, responsibilities, inter-service communication patterns)
+
+## Integration Points
+(Third-party APIs, webhooks, event bus patterns, auth providers)
+
+## Security Implementation
+- **Authentication:** ...
+- **Authorization:** ...
+- **Input validation:** ...
+- **Data encryption:** ...
+- **Secrets management:** ...
+
+## Infrastructure & Deployment
+(Docker setup, CI/CD pipeline, environments, scaling strategy, environment variables needed)
+
+## Error Handling & Observability
+(Logging strategy, error response patterns, monitoring approach)
+
+## Development Guidelines
+(Project structure, naming conventions, testing strategy, code review process)
+
+Be specific, technical, and immediately actionable by an engineering team. Reference the actual tech stack from the architecture.`,
+  },
   tasks: {
     name: 'Mill',
     icon: '⚡',
@@ -149,9 +230,25 @@ Repeat the story block for each story. Generate 4 epics with 4-5 stories each. B
   },
 };
 
+// Build message content supporting text + image attachments
+function buildMessageContent(textContent, files = []) {
+  const content = [];
+  if (textContent) content.push({ type: 'text', text: textContent });
+  for (const file of files) {
+    if (file.type && file.type.startsWith('image/') && file.content) {
+      // Strip data URL prefix to get raw base64
+      const base64 = file.content.includes(',') ? file.content.split(',')[1] : file.content;
+      content.push({ type: 'image', source: { type: 'base64', media_type: file.type, data: base64 } });
+    } else if (file.content) {
+      content.push({ type: 'text', text: `\n\n[Attached file: ${file.name}]\n${file.content}` });
+    }
+  }
+  return content.length === 1 && content[0].type === 'text' ? content[0].text : content;
+}
+
 app.post('/api/forge', async (req, res) => {
-  const { input, mode } = req.body;
-  if (!input?.trim()) return res.status(400).json({ error: 'Input is required' });
+  const { input, mode, files = [] } = req.body;
+  if (!input?.trim() && files.length === 0) return res.status(400).json({ error: 'Input is required' });
   if (!process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -173,7 +270,7 @@ app.post('/api/forge', async (req, res) => {
 
     const stream = anthropic.messages.stream({
       model: 'claude-sonnet-4-6',
-      max_tokens: agentKey === 'prd' || agentKey === 'tasks' ? 4096 : 2048,
+      max_tokens: ['prd', 'tasks', 'techspec'].includes(agentKey) ? 4096 : 2048,
       system: agent.system,
       messages,
     });
@@ -192,31 +289,39 @@ app.post('/api/forge', async (req, res) => {
   try {
     const modeLabel = mode === 'legacy' ? 'Legacy Modernization' : 'New Product Development';
 
-    // Agent 1: Intent
+    // Agent 1: Triage — include any attached files (images/docs) in first message
     const intentRaw = await runAgent('intent', [{
       role: 'user',
-      content: `Analyze this project idea for ${modeLabel}:\n\n${input}`,
+      content: buildMessageContent(
+        `Analyze this project idea for ${modeLabel}:\n\n${input}`,
+        files
+      ),
     }]);
 
-    // Agent 2: Architecture
+    // Agent 2: Drafthouse
     const archRaw = await runAgent('architecture', [{
       role: 'user',
       content: `Design the architecture for this product.\n\nRequirements analysis:\n${intentRaw}\n\nOriginal input:\n${input}`,
     }]);
 
-    // Agent 3: PRD
+    // Agent 3: Press
     const prdRaw = await runAgent('prd', [{
       role: 'user',
       content: `Generate a PRD.\n\nRequirements:\n${intentRaw}\n\nArchitecture:\n${archRaw}\n\nOriginal input:\n${input}`,
     }]);
 
-    // Agent 4: Tasks
+    // Agent 4: Blueprint — tech spec for engineering teams
+    const techspecRaw = await runAgent('techspec', [{
+      role: 'user',
+      content: `Generate a Technical Specification for engineering teams.\n\nRequirements:\n${intentRaw}\n\nArchitecture:\n${archRaw}\n\nPRD:\n${prdRaw}`,
+    }]);
+
+    // Agent 5: Mill
     const tasksRaw = await runAgent('tasks', [{
       role: 'user',
       content: `Generate development tasks.\n\nRequirements:\n${intentRaw}\n\nArchitecture:\n${archRaw}`,
     }]);
 
-    // Parse and send final structured results
     const intentData = parseJSON(intentRaw);
     const archData = parseJSON(archRaw);
     const tasksData = parseJSON(tasksRaw);
@@ -227,6 +332,7 @@ app.post('/api/forge', async (req, res) => {
         intent: intentData || intentRaw,
         architecture: archData || archRaw,
         prd: prdRaw,
+        techspec: techspecRaw,
         tasks: tasksData || tasksRaw,
       },
     });
@@ -425,8 +531,222 @@ app.post('/api/analyze-code', async (req, res) => {
 
 app.get('/api/health', (_, res) => res.json({ status: 'ok', model: 'claude-sonnet-4-6' }));
 
+// ── ALM Data Sync ─────────────────────────────────────────────────────────────
+
+app.post('/api/alm/sync', (req, res) => {
+  const { projects } = req.body;
+  if (!Array.isArray(projects)) return res.status(400).json({ error: 'Invalid data' });
+  writeProjects(projects);
+  res.json({ ok: true });
+});
+
+app.get('/api/alm/projects', (_, res) => res.json(readProjects()));
+
+app.patch('/api/alm/stories/:projectId/:versionId/:storyId', (req, res) => {
+  const { projectId, versionId, storyId } = req.params;
+  const { status, notes } = req.body;
+  const valid = ['not_developed', 'in_progress', 'in_review', 'completed', 'removed'];
+  if (!valid.includes(status)) return res.status(400).json({ error: `Invalid status. Must be one of: ${valid.join(', ')}` });
+  const projects = readProjects();
+  const project = projects.find(p => p.id === projectId);
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+  const version = project.versions.find(v => v.id === versionId);
+  if (!version) return res.status(404).json({ error: 'Version not found' });
+  if (!version.story_statuses) version.story_statuses = {};
+  version.story_statuses[storyId] = { status, updated_at: new Date().toISOString(), notes: notes || null };
+  project.updated_at = new Date().toISOString();
+  writeProjects(projects);
+  res.json({ ok: true, storyId, status });
+});
+
+app.get('/api/alm/server-path', (_, res) => {
+  res.json({ path: join(__dirname, 'mcp-server.js') });
+});
+
+// ── MCP API Key Management ─────────────────────────────────────────────────────
+
+app.post('/api/mcp/keys', (req, res) => {
+  const { projectId, projectName } = req.body;
+  if (!projectId) return res.status(400).json({ error: 'projectId required' });
+  const keys = readKeys();
+  const existing = keys.find(k => k.projectId === projectId);
+  if (existing) return res.json({ key: existing.key, projectId, projectName: existing.projectName });
+  const key = `ff-${Math.random().toString(36).slice(2, 10)}-${Math.random().toString(36).slice(2, 10)}`;
+  keys.push({ key, projectId, projectName: projectName || 'Unknown', createdAt: new Date().toISOString() });
+  writeKeys(keys);
+  res.json({ key, projectId, projectName });
+});
+
+app.get('/api/mcp/keys/:projectId', (req, res) => {
+  const key = readKeys().find(k => k.projectId === req.params.projectId);
+  res.json(key ? { key: key.key } : { key: null });
+});
+
+app.delete('/api/mcp/keys/:projectId', (req, res) => {
+  writeKeys(readKeys().filter(k => k.projectId !== req.params.projectId));
+  res.json({ ok: true });
+});
+
+// ── MCP Endpoint (JSON-RPC 2.0 over HTTP) ─────────────────────────────────────
+
+const MCP_TOOLS = [
+  {
+    name: 'get_project_summary',
+    description: 'Get a summary of the Software Factory project: name, version, epic list, and story counts by status.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_work_orders',
+    description: 'List work orders (user stories) for the project. Optionally filter by status.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          description: 'Filter by status',
+          enum: ['not_developed', 'in_progress', 'in_review', 'completed', 'removed'],
+        },
+      },
+    },
+  },
+  {
+    name: 'get_next_work_order',
+    description: 'Get the next pending work order and automatically mark it as in_progress. Call this when ready to start working.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_work_order',
+    description: 'Get full details of a specific work order by story ID (e.g. E1-S1).',
+    inputSchema: {
+      type: 'object',
+      properties: { story_id: { type: 'string', description: 'The story ID, e.g. E1-S1' } },
+      required: ['story_id'],
+    },
+  },
+  {
+    name: 'update_work_order_status',
+    description: 'Update the status of a work order. Use "in_review" when done and ready for human review.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        story_id: { type: 'string', description: 'The story ID to update' },
+        status: { type: 'string', enum: ['not_developed', 'in_progress', 'in_review', 'completed'] },
+        notes: { type: 'string', description: 'Optional notes about the work done' },
+      },
+      required: ['story_id', 'status'],
+    },
+  },
+];
+
+function getMCPProject(projectId) {
+  const projects = readProjects();
+  const project = projects.find(p => p.id === projectId) || projects[0];
+  if (!project) return { project: null, version: null, stories: [] };
+  const version = project.versions[project.versions.length - 1] || null;
+  const stories = [];
+  if (version) {
+    for (const epic of (version.artifacts?.tasks?.epics || [])) {
+      for (const story of (epic.stories || [])) {
+        const st = version.story_statuses?.[story.id];
+        stories.push({ ...story, epic_title: epic.title, epic_color: epic.color, version_id: version.id, status: st?.status || 'not_developed', status_notes: st?.notes || null });
+      }
+    }
+    // Markdown-based tasks (Mill format)
+    if (stories.length === 0 && typeof version.artifacts?.tasks === 'string') {
+      let epicTitle = '';
+      for (const line of version.artifacts.tasks.split('\n')) {
+        if (line.startsWith('## ')) epicTitle = line.replace(/^## /, '').replace(/^Epic\s*\d*:?\s*/i, '').trim();
+        const match = line.match(/^### \[([^\]]+)\] (.+)/);
+        if (match) {
+          const [, id, title] = match;
+          const st = version.story_statuses?.[id];
+          stories.push({ id, title, epic_title: epicTitle, version_id: version.id, status: st?.status || 'not_developed', status_notes: st?.notes || null });
+        }
+      }
+    }
+  }
+  return { project, version, stories };
+}
+
+function mcpUpdateStatus(projectId, versionId, storyId, status, notes) {
+  const projects = readProjects();
+  const version = projects.find(p => p.id === projectId)?.versions.find(v => v.id === versionId);
+  if (!version) return false;
+  if (!version.story_statuses) version.story_statuses = {};
+  version.story_statuses[storyId] = { status, updated_at: new Date().toISOString(), notes: notes || null };
+  writeProjects(projects);
+  return true;
+}
+
+function mcpAuth(req, res, next) {
+  const auth = req.headers['authorization'];
+  if (!auth?.startsWith('Bearer ')) return res.status(401).json({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Missing API key' } });
+  const key = auth.slice(7);
+  const record = readKeys().find(k => k.key === key);
+  if (!record) return res.status(401).json({ jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Invalid API key' } });
+  req.mcpProjectId = record.projectId;
+  next();
+}
+
+app.post('/mcp', mcpAuth, (req, res) => {
+  const { id, method, params = {} } = req.body;
+  const ok = (result) => res.json({ jsonrpc: '2.0', id, result });
+  const err = (code, message) => res.json({ jsonrpc: '2.0', id, error: { code, message } });
+
+  if (method === 'initialize') return ok({ protocolVersion: '2024-11-05', serverInfo: { name: 'forge-factory', version: '1.0.0' }, capabilities: { tools: {} } });
+  if (method === 'notifications/initialized') return res.status(204).end();
+  if (method === 'tools/list') return ok({ tools: MCP_TOOLS });
+
+  if (method === 'tools/call') {
+    const { name, arguments: args = {} } = params;
+    const { project, version, stories } = getMCPProject(req.mcpProjectId);
+    if (!project) return err(-32603, 'No project found. Open the Forge app and forge a project first.');
+
+    const counts = {
+      not_developed: stories.filter(s => s.status === 'not_developed').length,
+      in_progress: stories.filter(s => s.status === 'in_progress').length,
+      in_review: stories.filter(s => s.status === 'in_review').length,
+      completed: stories.filter(s => s.status === 'completed').length,
+    };
+
+    if (name === 'get_project_summary') {
+      return ok({ content: [{ type: 'text', text: JSON.stringify({ project_id: project.id, name: project.name, version: version?.semver || '1.0.0', total_stories: stories.length, story_counts: counts, completion_pct: stories.length ? Math.round((counts.completed / stories.length) * 100) : 0, epics: [...new Set(stories.map(s => s.epic_title).filter(Boolean))] }, null, 2) }] });
+    }
+
+    if (name === 'get_work_orders') {
+      const list = args.status ? stories.filter(s => s.status === args.status) : stories;
+      return ok({ content: [{ type: 'text', text: JSON.stringify({ project: project.name, version: version?.semver, story_counts: counts, stories: list.map(s => ({ id: s.id, title: s.title, epic: s.epic_title, status: s.status, priority: s.priority, story_points: s.story_points, sprint: s.sprint })) }, null, 2) }] });
+    }
+
+    if (name === 'get_next_work_order') {
+      const next = stories.find(s => s.status === 'not_developed');
+      if (!next) return ok({ content: [{ type: 'text', text: 'No pending work orders. All stories are in progress, in review, or completed.' }] });
+      mcpUpdateStatus(req.mcpProjectId, next.version_id, next.id, 'in_progress', 'Picked up by coding agent via MCP');
+      return ok({ content: [{ type: 'text', text: JSON.stringify({ ...next, status: 'in_progress', message: `Work order ${next.id} is now in_progress. When done, call update_work_order_status with status "in_review".` }, null, 2) }] });
+    }
+
+    if (name === 'get_work_order') {
+      const story = stories.find(s => s.id === args.story_id);
+      if (!story) return err(-32602, `Work order ${args.story_id} not found`);
+      return ok({ content: [{ type: 'text', text: JSON.stringify(story, null, 2) }] });
+    }
+
+    if (name === 'update_work_order_status') {
+      const story = stories.find(s => s.id === args.story_id);
+      if (!story) return err(-32602, `Work order ${args.story_id} not found`);
+      mcpUpdateStatus(req.mcpProjectId, story.version_id, args.story_id, args.status, args.notes);
+      return ok({ content: [{ type: 'text', text: JSON.stringify({ ok: true, story_id: args.story_id, new_status: args.status, message: args.status === 'in_review' ? `Work order ${args.story_id} is now In Review. A human will review your changes in the Planner.` : `Work order ${args.story_id} updated to ${args.status}.` }, null, 2) }] });
+    }
+
+    return err(-32601, `Unknown tool: ${name}`);
+  }
+
+  return err(-32601, `Unknown method: ${method}`);
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`\n🔥 Forge API Server ready → http://localhost:${PORT}`);
+  console.log(`   MCP endpoint → http://localhost:${PORT}/mcp`);
   console.log(`   API Key: ${process.env.ANTHROPIC_API_KEY ? '✓ configured' : '✗ missing (set ANTHROPIC_API_KEY)'}\n`);
 });

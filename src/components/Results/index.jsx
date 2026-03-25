@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Layout, FileText, CheckSquare, Download, RefreshCw, Edit3, Database, GitBranch, CheckCircle2 } from 'lucide-react';
+import { Zap, Layout, FileText, CheckSquare, Download, RefreshCw, Edit3, Database, GitBranch, CheckCircle2, Code2 } from 'lucide-react';
 import ArchitectureTab from './ArchitectureTab.jsx';
 import PRDTab from './PRDTab.jsx';
 import TasksTab from './TasksTab.jsx';
+import TechSpecTab from './TechSpecTab.jsx';
 import SaveToALMModal from '../alm/SaveToALMModal.jsx';
 import { useALM } from '../../hooks/useALM.js';
 
 const TABS = [
   { id: 'architecture', label: 'Architecture', icon: Layout, color: '#06B6D4' },
   { id: 'prd', label: 'PRD', icon: FileText, color: '#10B981' },
+  { id: 'techspec', label: 'Tech Spec', icon: Code2, color: '#6366F1' },
   { id: 'tasks', label: 'Sprint Tasks', icon: CheckSquare, color: '#F59E0B' },
 ];
 
@@ -154,6 +156,20 @@ export default function Results({ data, forgeMode, onReset, onEdit, onViewALM })
               <Download className="w-3.5 h-3.5" />Download PRD
             </button>
           )}
+          {activeTab === 'techspec' && data.techspec && (
+            <button
+              onClick={() => {
+                const blob = new Blob([data.techspec], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'tech-spec.md'; a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="flex items-center gap-1.5 text-sm btn-secondary py-2 px-4"
+            >
+              <Download className="w-3.5 h-3.5" />Download Tech Spec
+            </button>
+          )}
           {activeTab === 'tasks' && (
             <button onClick={handleDownloadTasks} className="flex items-center gap-1.5 text-sm btn-secondary py-2 px-4">
               <Download className="w-3.5 h-3.5" />Export Tasks
@@ -165,6 +181,7 @@ export default function Results({ data, forgeMode, onReset, onEdit, onViewALM })
           <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
             {activeTab === 'architecture' && <ArchitectureTab data={data.architecture} />}
             {activeTab === 'prd' && <PRDTab prd={data.prd} />}
+            {activeTab === 'techspec' && <TechSpecTab data={data.techspec} />}
             {activeTab === 'tasks' && <TasksTab data={data.tasks} />}
           </motion.div>
         </AnimatePresence>
