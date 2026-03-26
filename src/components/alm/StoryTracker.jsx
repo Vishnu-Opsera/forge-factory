@@ -7,6 +7,16 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+const TYPE_FILTERS = [
+  { id: 'all',        label: 'All Issues',   icon: '◈' },
+  { id: 'epic',       label: 'Epics',        icon: '⬡' },
+  { id: 'user_story', label: 'User Stories', icon: '◻' },
+  { id: 'task',       label: 'Tasks',        icon: '◇' },
+];
+
+const USER_STORY_TYPES = ['feature', 'user_story'];
+const TASK_TYPES       = ['bug', 'chore', 'spike', 'enhancement', 'task', 'improvement'];
+
 const STATUSES = [
   { id: 'not_developed', labelKey: 'stories.backlog',    color: '#94A3B8', bg: 'bg-slate-500/10',   border: 'border-slate-500/20',   icon: Circle },
   { id: 'in_progress',   labelKey: 'stories.inProgress', color: '#F59E0B', bg: 'bg-amber-500/10',   border: 'border-amber-500/20',   icon: Clock },
@@ -236,8 +246,8 @@ function StoryAccordion({ story, versionId, onStatusChange }) {
   );
 }
 
-function EpicSection({ epic, versionId, onStatusChange, defaultOpen }) {
-  const [open, setOpen] = useState(defaultOpen);
+function EpicSection({ epic, versionId, onStatusChange, defaultOpen, epicsOnly }) {
+  const [open, setOpen] = useState(defaultOpen && !epicsOnly);
   const { t } = useTranslation();
 
   const statusCounts = STATUSES.reduce((acc, s) => {
@@ -289,7 +299,7 @@ function EpicSection({ epic, versionId, onStatusChange, defaultOpen }) {
 
       {/* Stories list */}
       <AnimatePresence>
-        {open && (
+        {open && !epicsOnly && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
@@ -319,25 +329,29 @@ function EpicSection({ epic, versionId, onStatusChange, defaultOpen }) {
 export default function StoryTracker({ versions, onStatusChange }) {
   const { t } = useTranslation();
   const [filterVersion, setFilterVersion] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [allExpanded, setAllExpanded] = useState(true);
-  const [expandKey, setExpandKey] = useState(0); // force re-render of EpicSection defaults
+  const [filterStatus, setFilterStatus]   = useState('all');
+  const [filterType, setFilterType]       = useState('all');
+  const [allExpanded, setAllExpanded]     = useState(true);
+  const [expandKey, setExpandKey]         = useState(0);
 
   // Build epics from all versions, merging status from story_statuses
-  const { epicsWithStories, storyCount, epicSet } = useMemo(() => {
+  const { epicsWithStories, storyCount } = useMemo(() => {
     const allEpics = [];
     let storyCount = 0;
-    const epicTitles = new Set();
 
     for (const v of versions) {
       if (filterVersion !== 'all' && v.semver !== filterVersion) continue;
       const epics = getEpicsFromVersion(v);
       for (const epic of epics) {
-        epicTitles.add(epic.title);
         const storiesWithStatus = (epic.stories || []).map(story => {
           const st = v.story_statuses?.[story.id];
           const status = st?.status || 'not_developed';
           if (filterStatus !== 'all' && status !== filterStatus) return null;
+
+          // Type filter (skip when filterType === 'epic' — handled at render level)
+          if (filterType === 'user_story' && !USER_STORY_TYPES.includes(story.type)) return null;
+          if (filterType === 'task'       && !TASK_TYPES.includes(story.type) && USER_STORY_TYPES.includes(story.type)) return null;
+
           storyCount++;
           return {
             ...story,
@@ -349,14 +363,16 @@ export default function StoryTracker({ versions, onStatusChange }) {
           };
         }).filter(Boolean);
 
-        if (storiesWithStatus.length > 0) {
-          allEpics.push({ ...epic, stories: storiesWithStatus });
+        // In epic-only mode always include the epic; otherwise only if it has matching stories
+        if (filterType === 'epic' || storiesWithStatus.length > 0) {
+          allEpics.push({ ...epic, stories: filterType === 'epic' ? (epic.stories || []) : storiesWithStatus });
+          if (filterType === 'epic') storyCount += (epic.stories?.length || 0);
         }
       }
     }
 
-    return { epicsWithStories: allEpics, storyCount, epicSet: epicTitles };
-  }, [versions, filterVersion, filterStatus]);
+    return { epicsWithStories: allEpics, storyCount };
+  }, [versions, filterVersion, filterStatus, filterType]);
 
   // Aggregate status counts across all stories
   const statusCounts = useMemo(() => {
@@ -405,6 +421,24 @@ export default function StoryTracker({ versions, onStatusChange }) {
         ))}
       </div>
 
+      {/* Issue type filter pills */}
+      <div className="flex items-center gap-1.5 flex-wrap glass-card p-1.5">
+        {TYPE_FILTERS.map(tf => (
+          <button
+            key={tf.id}
+            onClick={() => setFilterType(tf.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+              filterType === tf.id
+                ? 'bg-forge-purple/80 text-white shadow-sm shadow-forge-purple/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <span className="text-[11px]">{tf.icon}</span>
+            {tf.label}
+          </button>
+        ))}
+      </div>
+
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <Filter className="w-3.5 h-3.5 text-slate-500" />
@@ -444,6 +478,7 @@ export default function StoryTracker({ versions, onStatusChange }) {
                 versionId={epic.stories[0]?.version_id}
                 onStatusChange={onStatusChange}
                 defaultOpen={allExpanded}
+                epicsOnly={filterType === 'epic'}
               />
             </motion.div>
           ))}
