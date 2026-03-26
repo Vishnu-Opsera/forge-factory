@@ -27,7 +27,7 @@ function ChangeTag({ type, items }) {
   );
 }
 
-function VersionCard({ version, isSelected, onSelect, onViewArtifact, onUpdateLinks }) {
+function VersionCard({ version, isSelected, onSelect, onViewArtifact, onUpdateLinks, onNavigateToStories }) {
   const [expanded, setExpanded] = useState(isSelected);
   const diff = version.diff_from_previous;
   const bumpColor = BUMP_COLORS[version.bump_type] || '#94A3B8';
@@ -121,7 +121,7 @@ function VersionCard({ version, isSelected, onSelect, onViewArtifact, onUpdateLi
                   <ChangeTag type="removed" items={diff.features_removed} />
                   {(diff.tech_added?.length > 0 || diff.tech_removed?.length > 0) && (
                     <div className="text-xs text-slate-600">
-                      {diff.tech_added?.length > 0 && <span className="text-emerald-600">+{diff.tech_added.join(', ')} </span>}
+                      {diff.tech_added?.length > 0 && <span className="text-forge-whisper">+{diff.tech_added.join(', ')} </span>}
                       {diff.tech_removed?.length > 0 && <span className="text-red-600/60">-{diff.tech_removed.join(', ')}</span>}
                     </div>
                   )}
@@ -141,8 +141,8 @@ function VersionCard({ version, isSelected, onSelect, onViewArtifact, onUpdateLi
                   </button>
                 )}
                 {version.artifacts?.tasks && (
-                  <button onClick={() => onViewArtifact(version, 'tasks')} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-forge-amber hover:bg-amber-500/20 transition-colors">
-                    <CheckSquare className="w-3 h-3" /> Tasks v{version.semver}
+                  <button onClick={onNavigateToStories} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-forge-amber hover:bg-amber-500/20 transition-colors">
+                    <CheckSquare className="w-3 h-3" /> Stories v{version.semver}
                   </button>
                 )}
               </div>
@@ -177,7 +177,7 @@ function VersionCard({ version, isSelected, onSelect, onViewArtifact, onUpdateLi
   );
 }
 
-export default function VersionTimeline({ versions, selectedVersionId, onSelectVersion, onViewArtifact, onUpdateLinks }) {
+export default function VersionTimeline({ versions, selectedVersionId, onSelectVersion, onViewArtifact, onUpdateLinks, onNavigateToStories }) {
   return (
     <div className="space-y-3">
       {versions.length === 0 && (
@@ -191,6 +191,7 @@ export default function VersionTimeline({ versions, selectedVersionId, onSelectV
           onSelect={() => onSelectVersion(ver.id)}
           onViewArtifact={onViewArtifact}
           onUpdateLinks={onUpdateLinks}
+          onNavigateToStories={onNavigateToStories}
         />
       ))}
     </div>

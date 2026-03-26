@@ -329,6 +329,7 @@ export default function ALMDashboard({ onBack, onNewForge, onStartFromBaseline }
                               onSelectVersion={setSelectedVersionId}
                               onViewArtifact={handleViewArtifact}
                               onUpdateLinks={handleUpdateLinks}
+                              onNavigateToStories={() => setActiveTab('stories')}
                             />
                           )}
                           {activeTab === 'features' && <PRDDiff versions={versions} />}
