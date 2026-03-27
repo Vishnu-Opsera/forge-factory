@@ -88,7 +88,7 @@ function SuggestionCard({ s }) {
 }
 
 export default function RepoAnalysis({ data, onForge, onSkip }) {
-  const [editingIntent, setEditingIntent] = useState(false);
+  const [editingIntent, setEditingIntent] = useState(true);
   const [intentText, setIntentText] = useState(data.auto_intent || '');
   const [showAllIssues, setShowAllIssues] = useState(false);
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);

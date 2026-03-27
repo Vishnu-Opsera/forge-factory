@@ -2,9 +2,42 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GitBranch, FileText, Layers, CheckSquare, ChevronDown, ChevronUp,
-  Plus, Minus, ArrowUpDown, Clock, Zap, Package,
+  Plus, Minus, ArrowUpDown, Clock, Zap, Package, ExternalLink, Download,
 } from 'lucide-react';
 import LinkPanel from './LinkPanel.jsx';
+import { getVersionWithDownloadUrl, uploadArtifactVersion } from '../../lib/versioningApi.js';
+
+function BackendDownloadButton({ artifactId, versionNumber, label, localContent, contentType }) {
+  const [loading, setLoading] = useState(false);
+  const handleClick = async (e) => {
+    e.stopPropagation();
+    setLoading(true);
+    try {
+      const versionData = await getVersionWithDownloadUrl(artifactId, versionNumber);
+      // If stored as non-PDF and we have local content, re-upload as the correct type to get PDF
+      if (versionData.contentType !== 'application/pdf' && localContent) {
+        const content = typeof localContent === 'string'
+          ? localContent
+          : JSON.stringify(localContent, null, 2);
+        await uploadArtifactVersion(artifactId, content, contentType || 'text/plain', {});
+        // Fetch latest version (the new PDF)
+        const updated = await getVersionWithDownloadUrl(artifactId, versionNumber + 1);
+        window.open(updated.downloadUrl, '_blank');
+      } else {
+        window.open(versionData.downloadUrl, '_blank');
+      }
+    } catch { /* silently fail */ }
+    finally { setLoading(false); }
+  };
+  return (
+    <button
+      onClick={handleClick}
+      className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-slate-800/50 border border-slate-700/40 text-slate-400 hover:text-white hover:border-slate-600 transition-colors"
+    >
+      {loading ? '…' : <><Download className="w-3 h-3" /> {label}</>}
+    </button>
+  );
+}
 
 const BUMP_COLORS = { major: '#8B5CF6', minor: '#C2B0F6', patch: '#F5A83E' };
 
@@ -144,6 +177,24 @@ function VersionCard({ version, isSelected, onSelect, onViewArtifact, onUpdateLi
                   <button onClick={onNavigateToStories} className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-forge-amber hover:bg-amber-500/20 transition-colors">
                     <CheckSquare className="w-3 h-3" /> Stories v{version.semver}
                   </button>
+                )}
+                {version._backend?.prd?.artifactId && (
+                  <BackendDownloadButton
+                    artifactId={version._backend.prd.artifactId}
+                    versionNumber={version._backend.prd.versionNumber}
+                    label="↓ PRD (PDF)"
+                    localContent={version.artifacts?.prd}
+                    contentType="text/markdown"
+                  />
+                )}
+                {version._backend?.architecture?.artifactId && (
+                  <BackendDownloadButton
+                    artifactId={version._backend.architecture.artifactId}
+                    versionNumber={version._backend.architecture.versionNumber}
+                    label="↓ Arch (PDF)"
+                    localContent={version.artifacts?.architecture}
+                    contentType="text/plain"
+                  />
                 )}
               </div>
 

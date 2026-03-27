@@ -107,7 +107,8 @@
     "insightsSubtitle": "Cross-version metrics and trends",
     "updated": "Updated",
     "created": "Created",
-    "alm": "ALM"
+    "alm": "ALM",
+    "search": "Search"
   },
   "stories": {
     "backlog": "Backlog",

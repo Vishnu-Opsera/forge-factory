@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import { env } from './config/env.js';
 import { authMiddleware } from './middleware/auth.stub.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
@@ -11,6 +12,16 @@ import { sql } from 'drizzle-orm';
 import { pingS3 } from './storage/s3.js';
 
 const app = express();
+
+// ─── CORS ─────────────────────────────────────────────────────────────────────
+const allowedOrigins = (env.CORS_ORIGINS ?? 'http://localhost:5173').split(',');
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
 
 // ─── Body parsing ─────────────────────────────────────────────────────────────
 app.use(express.json({ limit: env.MAX_UPLOAD_BYTES }));

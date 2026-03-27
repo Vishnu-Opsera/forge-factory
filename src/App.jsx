@@ -11,6 +11,7 @@ import AuthModal from './components/AuthModal.jsx';
 import { createProject, saveNewVersion, loadProjects } from './store/almStore.js';
 import { getShareToken, incrementShareViews } from './store/shareStore.js';
 import { getSession } from './store/authStore.js';
+import { syncVersionToBackend } from './lib/syncVersionToBackend.js';
 
 export const PAGES = { HERO: 'hero', INPUT: 'input', PIPELINE: 'pipeline', RESULTS: 'results', ALM: 'alm', APPROVAL: 'approval', SHARED: 'shared' };
 
@@ -28,6 +29,7 @@ export default function App() {
   const [forgeData, setForgeData] = useState(null);
   const [pipelineInput, setPipelineInput] = useState('');
   const [pipelineFiles, setPipelineFiles] = useState([]);
+  const [pipelineAnalysis, setPipelineAnalysis] = useState(null);
   const [baseline, setBaseline] = useState(null);
   const [approvalId] = useState(() => getUrlParam('approve'));
   const [shareTokenId] = useState(() => getUrlParam('share'));
@@ -50,19 +52,25 @@ export default function App() {
     };
   }, []);
 
-  const startForge = useCallback((input, selectedMode, files = []) => {
+  const startForge = useCallback((input, selectedMode, files = [], analysisData = null) => {
     setPipelineInput(input);
     setPipelineFiles(files);
     setMode(selectedMode);
+    setPipelineAnalysis(analysisData);
     setForgeData(null);
     setPage(PAGES.PIPELINE);
   }, []);
 
   const onComplete = useCallback((data) => {
-    // Auto-save to ALM
+    // Auto-save to ALM (localStorage) + backend
     try {
       const p = createProject(null, data);
-      saveNewVersion(p.id, { ...data, mode }, 'minor', {}, '');
+      const result = saveNewVersion(p.id, { ...data, mode, analysis: pipelineAnalysis }, 'minor', {}, '');
+      if (result) {
+        syncVersionToBackend(result.project.id, result.version.id, data).catch((err) => {
+          console.warn('[versioning] auto-sync failed:', err.message);
+        });
+      }
     } catch (e) {
       console.warn('ALM auto-save failed:', e.message);
     }
@@ -77,7 +85,7 @@ export default function App() {
       setPendingForgeData(data);
       setShowAuthModal(true);
     }
-  }, [mode]);
+  }, [mode, pipelineAnalysis]);
 
   const handleAuth = useCallback((newSession) => {
     setSession(newSession);
@@ -97,6 +105,7 @@ export default function App() {
     setPipelineFiles([]);
     setBaseline(null);
     setPendingForgeData(null);
+    setPipelineAnalysis(null);
   }, []);
 
   const startFromBaseline = useCallback((baselineData) => {
@@ -145,7 +154,7 @@ export default function App() {
         )}
         {page === PAGES.RESULTS && forgeData && (
           <motion.div key="results" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
-            <Results data={forgeData} forgeMode={mode} onReset={reset} onEdit={() => setPage(PAGES.INPUT)} onViewALM={() => setPage(PAGES.ALM)} session={session} />
+            <Results data={forgeData} forgeMode={mode} onReset={reset} onEdit={() => setPage(PAGES.INPUT)} onViewALM={() => setPage(PAGES.ALM)} session={session} input={pipelineInput} />
           </motion.div>
         )}
         {page === PAGES.ALM && (

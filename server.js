@@ -73,16 +73,21 @@ Design the technical architecture and return ONLY valid JSON with this structure
     "backend": ["Node.js", "Express"],
     "database": ["PostgreSQL", "Redis"],
     "infrastructure": ["AWS ECS", "Docker"],
-    "ai_ml": ["Claude API", "Anthropic SDK"]
+    "ai_ml": ["Claude API"],
+    "payments": ["Stripe", "PayPal SDK"],
+    "third_party": ["Mailchimp API", "Google Analytics"]
   },
   "key_decisions": [
-    {"title": "Decision title", "choice": "What was chosen", "rationale": "Why"}
+    {"title": "Decision title", "choice": "What was chosen", "rationale": "Why it was chosen over alternatives"}
   ],
   "api_design": "REST|GraphQL|gRPC",
   "deployment": "cloud|on-premise|hybrid",
   "estimated_cost": "$X-Y/month"
 }
-For mermaid: use flowchart TD, include at least 8 nodes showing frontend, API, services, and database layers. Use proper Mermaid syntax with --> arrows and [label] nodes.`,
+Rules:
+- Only include tech_stack categories that are actually relevant to the product. Omit payments if no payments, omit ai_ml if no AI, etc.
+- key_decisions must have at least 5 entries, each with a clear rationale explaining why alternatives were rejected.
+- For mermaid: use graph TD, include at least 10 nodes showing user roles, frontend, API layer, services, databases, and external integrations. Use proper Mermaid syntax with --> arrows and [Label] nodes. Keep node IDs short (no spaces).`,
   },
   prd: {
     name: 'press',
@@ -226,7 +231,7 @@ As a [user role], I want [action] so that [benefit].
 
 ---
 
-Repeat the story block for each story. Generate 4 epics with 4-5 stories each. Be specific and developer-actionable.`,
+Repeat the story block for each story. You MUST generate exactly 4 epics. Each epic MUST have exactly 4 stories. That is 16 stories total — do not stop early. Be specific and developer-actionable.`,
   },
 };
 
@@ -247,8 +252,8 @@ function buildMessageContent(textContent, files = []) {
 }
 
 app.post('/api/forge', async (req, res) => {
-  const { input, mode, files = [], resumeFrom, previousResults = {}, feedback = '' } = req.body;
-  if (!input?.trim() && files.length === 0) return res.status(400).json({ error: 'Input is required' });
+  const { input, mode, files = [], resumeFrom, previousResults = {}, feedback = '', stopAfter } = req.body;
+  if (!resumeFrom && !input?.trim() && files.length === 0) return res.status(400).json({ error: 'Input is required' });
   if (!process.env.ANTHROPIC_API_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -289,6 +294,7 @@ app.post('/api/forge', async (req, res) => {
   // Agents in order
   const AGENT_ORDER = ['intent', 'architecture', 'prd', 'techspec', 'tasks'];
   const resumeIndex = resumeFrom ? AGENT_ORDER.indexOf(resumeFrom) : 0;
+  const stopIndex   = stopAfter  ? AGENT_ORDER.indexOf(stopAfter)  : AGENT_ORDER.length - 1;
 
   // Effective input with optional feedback injected
   const feedbackNote = feedback.trim()
@@ -333,7 +339,7 @@ app.post('/api/forge', async (req, res) => {
     }
 
     // Agent 4: Blueprint
-    if (resumeIndex <= 3) {
+    if (resumeIndex <= 3 && stopIndex >= 3) {
       techspecRaw = await runAgent('techspec', [{
         role: 'user',
         content: `Generate a Technical Specification for engineering teams.\n\nRequirements:\n${intentRaw}\n\nArchitecture:\n${archRaw}\n\nPRD:\n${prdRaw}${feedbackNote}`,
@@ -341,10 +347,13 @@ app.post('/api/forge', async (req, res) => {
     }
 
     // Agent 5: Mill
-    const tasksRaw = await runAgent('tasks', [{
-      role: 'user',
-      content: `Generate development tasks.\n\nRequirements:\n${intentRaw}\n\nArchitecture:\n${archRaw}${feedbackNote}`,
-    }]);
+    let tasksRaw = '';
+    if (stopIndex >= 4) {
+      tasksRaw = await runAgent('tasks', [{
+        role: 'user',
+        content: `Generate development tasks.\n\nRequirements:\n${intentRaw}\n\nArchitecture:\n${archRaw}${feedbackNote}`,
+      }]);
+    }
 
     const intentData = parseJSON(intentRaw);
     const archData = parseJSON(archRaw);

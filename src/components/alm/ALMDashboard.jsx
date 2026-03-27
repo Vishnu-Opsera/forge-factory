@@ -1,21 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   Zap, ArrowLeft, GitBranch, BarChart3, CheckSquare,
-  Clock, Plus, Package, Layers, Settings, Send, Share2, Terminal,
+  Clock, Plus, Package, Layers, Settings, Send, Share2, Terminal, Search,
+  MessageSquare, RefreshCw, Loader,
 } from 'lucide-react';
+import { useForgeRegenerate } from '../../lib/useForgeRegenerate.js';
 import { useALM } from '../../hooks/useALM.js';
 import { getInsights } from '../../store/almStore.js';
 import VersionTimeline from './VersionTimeline.jsx';
 import PRDDiff from './PRDDiff.jsx';
 import StoryTracker from './StoryTracker.jsx';
 import InsightsDashboard from './InsightsDashboard.jsx';
+import GlobalInsightsDashboard from './GlobalInsightsDashboard.jsx';
 import BaselinePanel from './BaselinePanel.jsx';
 import SettingsPanel from './SettingsPanel.jsx';
 import ApprovalsPanel from './ApprovalsPanel.jsx';
 import ShareModal from '../ShareModal.jsx';
 import ConnectIDEPanel from './ConnectIDEPanel.jsx';
+import ArtifactSearch from './ArtifactSearch.jsx';
 import ThemeToggle from '../ThemeToggle.jsx';
 import LanguageSwitcher from '../LanguageSwitcher.jsx';
 import ProfileMenu from '../ProfileMenu.jsx';
@@ -35,6 +39,7 @@ const PROJECT_TAB_DEFS = [
   { id: 'baseline',  labelKey: 'alm.baseline',   icon: Layers },
   { id: 'approvals', labelKey: 'alm.approvals',  icon: Send },
   { id: 'connect',   labelKey: 'alm.connectIDE', icon: Terminal },
+  { id: 'search',    labelKey: 'alm.search',     icon: Search },
 ];
 
 // Global (sidebar-level) sections
@@ -129,12 +134,40 @@ export default function ALMDashboard({ onBack, onNewForge, onStartFromBaseline }
   const { t } = useTranslation();
   const PROJECT_TABS = PROJECT_TAB_DEFS.map(tab => ({ ...tab, label: t(tab.labelKey) }));
   const GLOBAL_SECTIONS = GLOBAL_SECTION_DEFS.map(s => ({ ...s, label: t(s.labelKey) }));
-  const { projects, activeProject, activeProjectId, setActiveProjectId, versions, insights, updateStory, updateLinks, removeProject } = useALM();
+  const { projects, activeProject, activeProjectId, setActiveProjectId, versions, insights, updateStory, updateLinks, removeProject, saveToProject } = useALM();
   const [section, setSection] = useState('alm'); // alm | insights | settings
   const [activeTab, setActiveTab] = useState('timeline');
   const [selectedVersionId, setSelectedVersionId] = useState(versions[versions.length - 1]?.id || null);
   const [artifactView, setArtifactView] = useState(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+
+  // ── Feedback / regeneration ───────────────────────────────────────────────
+  const [feedback, setFeedback] = useState('');
+  const [feedbackTarget, setFeedbackTarget] = useState('architecture');
+
+  // Build forgeData from the latest version's artifacts
+  const latestVersion = versions[versions.length - 1];
+  const latestForgeData = latestVersion
+    ? { ...latestVersion.artifacts, mode: latestVersion.forge_mode || 'new_product' }
+    : null;
+
+  const { regenerate, isStreaming, activeAgent, streamText, result } =
+    useForgeRegenerate({ forgeData: latestForgeData, input: '' });
+
+  // When regeneration completes, auto-save as new minor version
+  useEffect(() => {
+    if (!result || !activeProjectId) return;
+    const merged = { ...latestForgeData, ...result };
+    saveToProject(activeProjectId, merged, merged.mode || 'new_product', 'minor', {}, feedback || 'Regenerated via ALM feedback');
+    setFeedback('');
+  }, [result]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const REGEN_TARGETS = [
+    { value: null,           label: 'Requirements & PRD', desc: 'Regenerates everything from scratch' },
+    { value: 'architecture', label: 'Architecture',        desc: 'Architecture → PRD → Tech Spec → Tasks' },
+    { value: 'techspec',     label: 'Tech Spec',           desc: 'Tech Spec → Tasks' },
+    { value: 'tasks',        label: 'Sprint Tasks',        desc: 'Tasks only' },
+  ];
 
   const handleViewArtifact = (version, artifact) => setArtifactView({ version, artifact });
   const handleUpdateLinks = (versionId, links) => updateLinks(versionId, links);
@@ -254,13 +287,9 @@ export default function ALMDashboard({ onBack, onNewForge, onStartFromBaseline }
                 <motion.div key="insights-global" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-6">
                   <div className="mb-6">
                     <h1 className="text-2xl font-black text-white mb-1">{t('alm.insights')}</h1>
-                    <div className="text-sm text-slate-500">{t('alm.insightsSubtitle')}</div>
+                    <div className="text-sm text-slate-500">Cross-project metrics — time saved, features shipped, refactors</div>
                   </div>
-                  {!activeProject ? (
-                    <div className="text-center py-16 text-slate-600 text-sm">{t('alm.noProjectSelected')}</div>
-                  ) : (
-                    <InsightsDashboard insights={insights} versions={versions} />
-                  )}
+                  <GlobalInsightsDashboard projects={projects} />
                 </motion.div>
               )}
 
@@ -323,14 +352,78 @@ export default function ALMDashboard({ onBack, onNewForge, onStartFromBaseline }
                           transition={{ duration: 0.2 }}
                         >
                           {activeTab === 'timeline' && (
-                            <VersionTimeline
-                              versions={versions}
-                              selectedVersionId={selectedVersionId}
-                              onSelectVersion={setSelectedVersionId}
-                              onViewArtifact={handleViewArtifact}
-                              onUpdateLinks={handleUpdateLinks}
-                              onNavigateToStories={() => setActiveTab('stories')}
-                            />
+                            <>
+                              <VersionTimeline
+                                versions={versions}
+                                selectedVersionId={selectedVersionId}
+                                onSelectVersion={setSelectedVersionId}
+                                onViewArtifact={handleViewArtifact}
+                                onUpdateLinks={handleUpdateLinks}
+                                onNavigateToStories={() => setActiveTab('stories')}
+                              />
+
+                              {/* Feedback / Regeneration Panel */}
+                              {latestForgeData && (
+                                <div className="glass-card p-5 mt-4 space-y-3">
+                                  <div className="flex items-center gap-2">
+                                    <MessageSquare className="w-4 h-4 text-forge-whisper" />
+                                    <span className="text-sm font-semibold text-white">Refine This Project</span>
+                                  </div>
+
+                                  {/* Target selector */}
+                                  <div className="flex flex-wrap gap-2">
+                                    {REGEN_TARGETS.map(tgt => (
+                                      <button
+                                        key={String(tgt.value)}
+                                        onClick={() => setFeedbackTarget(tgt.value)}
+                                        disabled={isStreaming}
+                                        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-40 ${
+                                          feedbackTarget === tgt.value
+                                            ? 'bg-forge-whisper/20 border-forge-whisper/40 text-forge-whisper'
+                                            : 'border-slate-700 text-slate-500 hover:text-slate-300 hover:border-slate-600'
+                                        }`}
+                                      >
+                                        {tgt.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <p className="text-xs text-slate-500">
+                                    {REGEN_TARGETS.find(tgt => tgt.value === feedbackTarget)?.desc}
+                                    {' — '}saves as new version automatically
+                                  </p>
+
+                                  {isStreaming && (
+                                    <div className="flex items-center gap-2 text-xs text-forge-whisper">
+                                      <Loader className="w-3 h-3 animate-spin" />
+                                      Running {activeAgent}… {streamText.length} chars
+                                    </div>
+                                  )}
+
+                                  <textarea
+                                    value={feedback}
+                                    onChange={e => setFeedback(e.target.value)}
+                                    disabled={isStreaming}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && feedback.trim()) {
+                                        regenerate(feedbackTarget, feedback);
+                                      }
+                                    }}
+                                    placeholder="What should change? e.g. 'Add OAuth login' or 'Switch to microservices'"
+                                    className="w-full h-16 bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder-slate-600 resize-none focus:border-forge-whisper/50 outline-none transition-colors disabled:opacity-50"
+                                  />
+                                  <button
+                                    onClick={() => regenerate(feedbackTarget, feedback)}
+                                    disabled={isStreaming || !feedback.trim()}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-forge-whisper/15 border border-forge-whisper/30 text-forge-whisper text-sm hover:bg-forge-whisper/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >
+                                    {isStreaming
+                                      ? <><Loader className="w-3.5 h-3.5 animate-spin" />Regenerating…</>
+                                      : <><RefreshCw className="w-3.5 h-3.5" />Regenerate</>
+                                    }
+                                  </button>
+                                </div>
+                              )}
+                            </>
                           )}
                           {activeTab === 'features' && <PRDDiff versions={versions} />}
                           {activeTab === 'stories' && (
@@ -350,6 +443,9 @@ export default function ALMDashboard({ onBack, onNewForge, onStartFromBaseline }
                           )}
                           {activeTab === 'connect' && (
                             <ConnectIDEPanel project={activeProject} versions={versions} />
+                          )}
+                          {activeTab === 'search' && (
+                            <ArtifactSearch activeBackendProjectId={activeProject?._backend?.projectId ?? null} />
                           )}
                         </motion.div>
                       </AnimatePresence>

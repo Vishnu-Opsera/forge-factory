@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Minus, ArrowUpDown, GitBranch, Layers, TrendingUp } from 'lucide-react';
 import { computeDiff } from '../../store/almStore.js';
+import { fetchTextDiff } from '../../lib/versioningApi.js';
 
 function FeatureCard({ feature, type }) {
   const config = {
@@ -31,6 +32,23 @@ function FeatureCard({ feature, type }) {
 export default function PRDDiff({ versions }) {
   const [vAIdx, setVAIdx] = useState(0);
   const [vBIdx, setVBIdx] = useState(Math.min(1, versions.length - 1));
+  const [showTextDiff, setShowTextDiff] = useState(false);
+  const [textDiff, setTextDiff] = useState(null);
+  const [textDiffLoading, setTextDiffLoading] = useState(false);
+
+  const handleLoadTextDiff = async () => {
+    if (showTextDiff) { setShowTextDiff(false); return; }
+    const b = versions[vBIdx]?._backend?.prd;
+    if (!b?.artifactId) return;
+    if (textDiff) { setShowTextDiff(true); return; }
+    setTextDiffLoading(true);
+    try {
+      const diff = await fetchTextDiff(b.artifactId, b.versionNumber);
+      setTextDiff(diff);
+      setShowTextDiff(true);
+    } catch { /* silently fail */ }
+    finally { setTextDiffLoading(false); }
+  };
 
   if (versions.length < 1) {
     return <div className="text-center py-10 text-slate-600">Need at least one version to see features.</div>;
@@ -68,18 +86,28 @@ export default function PRDDiff({ versions }) {
           <div className="flex items-center gap-3">
             <div className="flex-1">
               <label className="text-xs text-slate-500 mb-1 block">Compare from</label>
-              <select value={vAIdx} onChange={e => setVAIdx(+e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none">
+              <select value={vAIdx} onChange={e => { setVAIdx(+e.target.value); setTextDiff(null); setShowTextDiff(false); }} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none">
                 {versions.map((v, i) => <option key={v.id} value={i}>v{v.semver} — {new Date(v.created_at).toLocaleDateString()}</option>)}
               </select>
             </div>
             <GitBranch className="w-5 h-5 text-slate-600 flex-shrink-0 mt-4" />
             <div className="flex-1">
               <label className="text-xs text-slate-500 mb-1 block">Compare to</label>
-              <select value={vBIdx} onChange={e => setVBIdx(+e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none">
+              <select value={vBIdx} onChange={e => { setVBIdx(+e.target.value); setTextDiff(null); setShowTextDiff(false); }} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none">
                 {versions.map((v, i) => <option key={v.id} value={i}>v{v.semver} — {new Date(v.created_at).toLocaleDateString()}</option>)}
               </select>
             </div>
           </div>
+          {!sameVersion && versions[vBIdx]?._backend?.prd?.artifactId && (
+            <div className="flex justify-end mt-3">
+              <button
+                onClick={handleLoadTextDiff}
+                className="text-xs px-3 py-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 transition-colors"
+              >
+                {textDiffLoading ? 'Loading…' : showTextDiff ? '← Feature diff' : 'Text diff (S3)'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -159,6 +187,22 @@ export default function PRDDiff({ versions }) {
           </div>
         )}
       </div>
+
+      {/* Backend text diff */}
+      {showTextDiff && textDiff && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-4">
+          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">PRD Text Diff</div>
+          <pre className="text-xs font-mono bg-slate-950 rounded-xl p-4 overflow-x-auto leading-5 border border-slate-800 max-h-96">
+            {textDiff.split('\n').map((line, i) => (
+              <div key={i} className={
+                line.startsWith('+') && !line.startsWith('+++') ? 'text-green-400' :
+                line.startsWith('-') && !line.startsWith('---') ? 'text-red-400' :
+                line.startsWith('@@') ? 'text-blue-400' : 'text-slate-500'
+              }>{line || '\u00a0'}</div>
+            ))}
+          </pre>
+        </motion.div>
+      )}
 
       {/* Tech stack diff */}
       {(techAdded.length > 0 || techRemoved.length > 0) && (

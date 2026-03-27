@@ -111,7 +111,7 @@ export default function InputPanel({ onForge, onBack, baseline, onClearBaseline 
       analysisData.issues?.length ? `Key Issues: ${analysisData.issues.slice(0, 3).map(i => i.issue).join(' | ')}` : '',
       analysisData.quick_wins?.length ? `Quick Wins: ${analysisData.quick_wins.slice(0, 3).join(' | ')}` : '',
     ].filter(Boolean).join('\n');
-    onForge(contextSummary, 'legacy', []);
+    onForge(contextSummary, 'legacy', [], analysisData);
   };
 
   const handleFiles = async (fileList) => {

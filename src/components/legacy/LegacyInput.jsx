@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Github, FolderOpen, FileArchive, Loader2, AlertCircle, ArrowRight, Zap } from 'lucide-react';
+import { Github, FolderOpen, FileArchive, Loader2, AlertCircle, ArrowRight, Zap, History, X } from 'lucide-react';
 import RepoAnalysis from './RepoAnalysis.jsx';
+import { saveDraft, updateDraft, loadDrafts, deleteDraft } from '../../store/legacyDraftStore.js';
 
 const METHODS = [
   { id: 'github', icon: Github, label: 'GitHub URL', desc: 'Public repo URL', color: '#8B5CF6' },
@@ -88,6 +89,14 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
   const folderRef = useRef();
   const zipRef = useRef();
   const abortRef = useRef();
+  const draftIdRef = useRef(null);
+
+  const [recentDrafts, setRecentDrafts] = useState(() =>
+    loadDrafts().filter(d => d.status === 'complete').slice(0, 3)
+  );
+
+  const refreshDrafts = () =>
+    setRecentDrafts(loadDrafts().filter(d => d.status === 'complete').slice(0, 3));
 
   const startSSEAnalysis = async (endpoint, body) => {
     setAnalyzing(true);
@@ -142,8 +151,16 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
               });
             } else if (event.type === 'analysis_complete') {
               setAnalysisData(event.data);
+              // Persist analysis result to localStorage
+              if (draftIdRef.current) {
+                updateDraft(draftIdRef.current, { status: 'complete', analysisData: event.data });
+                refreshDrafts();
+              }
             } else if (event.type === 'error') {
               setError(event.message);
+              if (draftIdRef.current) {
+                updateDraft(draftIdRef.current, { status: 'failed' });
+              }
             }
           } catch {}
         }
@@ -157,6 +174,12 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
 
   const handleGitHub = () => {
     if (!githubUrl.trim()) return;
+    draftIdRef.current = saveDraft({
+      method: 'github',
+      source: githubUrl.trim(),
+      fileNames: [],
+      fileCount: 0,
+    });
     startSSEAnalysis('/api/analyze-github', { url: githubUrl.trim() });
   };
 
@@ -164,6 +187,16 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     setUploadedFiles(files);
+
+    // Save metadata immediately — no file contents stored
+    const fileNames = files.map(f => f.webkitRelativePath || f.name);
+    draftIdRef.current = saveDraft({
+      method: 'folder',
+      source: files[0]?.webkitRelativePath?.split('/')[0] || 'folder',
+      fileNames,
+      fileCount: files.length,
+    });
+
     const extracted = await extractFilesFromFolder(files);
     startSSEAnalysis('/api/analyze-code', { files: extracted, source: 'folder' });
   };
@@ -172,6 +205,14 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadedFiles([file]);
+
+    draftIdRef.current = saveDraft({
+      method: 'zip',
+      source: file.name,
+      fileNames: [file.name],
+      fileCount: 1,
+    });
+
     setStreamLog([{ type: 'status', msg: `Extracting ${file.name}...` }]);
     setAnalyzing(true);
     try {
@@ -191,6 +232,16 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
 
   const handleSkip = () => {
     onSkipToForge();
+  };
+
+  const handleResumeFromDraft = (draft) => {
+    setAnalysisData(draft.analysisData);
+    draftIdRef.current = draft.id;
+  };
+
+  const handleDeleteDraft = (id) => {
+    deleteDraft(id);
+    setRecentDrafts(prev => prev.filter(d => d.id !== id));
   };
 
   return (
@@ -332,6 +383,41 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Recent Analyses — shown when idle and no active result */}
+      {recentDrafts.length > 0 && !analysisData && !analyzing && (
+        <div className="space-y-2 pt-1">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <History className="w-3.5 h-3.5" />
+            Recent Analyses
+          </div>
+          {recentDrafts.map(draft => (
+            <div
+              key={draft.id}
+              className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800/60 hover:border-slate-700/80 transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-semibold text-slate-300 truncate">{draft.source}</div>
+                <div className="text-xs text-slate-600 mt-0.5">
+                  {draft.method} · {draft.fileCount > 0 ? `${draft.fileCount} files · ` : ''}{new Date(draft.createdAt).toLocaleDateString()}
+                </div>
+              </div>
+              <button
+                onClick={() => handleResumeFromDraft(draft)}
+                className="text-xs px-3 py-1.5 rounded-lg bg-forge-purple/15 border border-forge-purple/30 text-forge-purple hover:bg-forge-purple/25 transition-colors flex-shrink-0"
+              >
+                Resume →
+              </button>
+              <button
+                onClick={() => handleDeleteDraft(draft.id)}
+                className="text-slate-600 hover:text-slate-400 transition-colors flex-shrink-0 p-0.5"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

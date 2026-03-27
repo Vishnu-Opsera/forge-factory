@@ -34,6 +34,7 @@ const envSchema = z.object({
     .string()
     .optional()
     .transform((v) => parseInt(v ?? '900', 10)),
+  CORS_ORIGINS: z.string().optional(),
 });
 
 function loadEnv() {

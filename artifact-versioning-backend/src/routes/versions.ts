@@ -7,6 +7,7 @@ import { presignedGetUrl, downloadObject } from '../storage/s3.js';
 import { unifiedDiff } from '../utils/diff.js';
 import { validate } from '../middleware/validate.js';
 import { env } from '../config/env.js';
+import { markdownToPdfBuffer, plainTextToPdfBuffer, architectureToPdfBuffer } from '../utils/toPdf.js';
 
 const router = Router({ mergeParams: true });
 
@@ -64,10 +65,38 @@ router.post('/', async (req, res, next) => {
       return;
     }
 
+    // Convert text content to PDF before storing
+    let finalContent = content;
+    let finalContentType = contentType.split(';')[0].trim();
+    let artifactTitle = 'Artifact';
+    let artifactType = '';
+    try {
+      const artifactRecord = await artifactService.getArtifact(req.params.id);
+      artifactTitle = artifactRecord.name;
+      artifactType = artifactRecord.type;
+    } catch { /* use default title */ }
+
+    if (finalContentType === 'text/markdown') {
+      finalContent = await markdownToPdfBuffer(content.toString('utf8'), artifactTitle);
+      finalContentType = 'application/pdf';
+    } else if (finalContentType === 'text/plain') {
+      if (artifactType === 'architecture') {
+        try {
+          const archData = JSON.parse(content.toString('utf8'));
+          finalContent = await architectureToPdfBuffer(archData, artifactTitle);
+        } catch {
+          finalContent = await plainTextToPdfBuffer(content.toString('utf8'), artifactTitle);
+        }
+      } else {
+        finalContent = await plainTextToPdfBuffer(content.toString('utf8'), artifactTitle);
+      }
+      finalContentType = 'application/pdf';
+    }
+
     const version = await artifactService.createVersion({
       artifactId: req.params.id,
-      content,
-      contentType: contentType.split(';')[0].trim(),
+      content: finalContent,
+      contentType: finalContentType,
       createdBy,
       changeSummary,
       generationMetadata,
@@ -138,10 +167,10 @@ router.get('/:vnum/diff', async (req, res, next) => {
     }
     const version = await versionService.getVersion(req.params.id, vnum);
 
-    if (!version.contentType.startsWith('text/')) {
+    if (!version.contentType.startsWith('text/') && version.contentType !== 'application/pdf') {
       res.status(422).json({
         status: 422,
-        detail: 'Diff is only supported for text content types',
+        detail: 'Diff is only supported for text and PDF content types',
       });
       return;
     }

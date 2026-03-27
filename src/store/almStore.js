@@ -150,7 +150,7 @@ export function saveNewVersion(projectId, forgeData, bumpType, links, note) {
     bump_type: bumpType || 'minor',
     created_at: new Date().toISOString(),
     forge_mode: forgeData.mode || 'new_product',
-    artifacts: { prd: forgeData.prd || null, architecture: forgeData.architecture || null, tasks: forgeData.tasks || null, intent: forgeData.intent || null },
+    artifacts: { prd: forgeData.prd || null, architecture: forgeData.architecture || null, tasks: forgeData.tasks || null, intent: forgeData.intent || null, analysis: forgeData.analysis || null },
     extracted: { features, tech_stack_flat, story_count: storyCount, epic_count: epics.length, total_points: totalPoints, complexity: forgeData.intent?.complexity || 'medium', estimated_timeline: forgeData.intent?.estimated_timeline || '' },
     links: { pr_url: links?.pr_url || null, commit_sha: links?.commit_sha || null, commit_url: links?.commit_url || null, pipeline_url: links?.pipeline_url || null, pipeline_status: links?.pipeline_status || null, pr_created_at: links?.pr_created_at || null, pr_merged_at: links?.pr_merged_at || null },
     changelog: { summary: note || '', auto_notes: [] },
@@ -223,6 +223,26 @@ export function getLatestVersion() {
   const project = projects[0]; // projects are stored newest-first
   const version = project.versions[project.versions.length - 1];
   return version ? { project, version } : null;
+}
+
+// ── Backend ID mapping ────────────────────────────────────────────────────────
+/**
+ * Persist backend UUIDs into a project/version's _backend field.
+ * Uses persistLocal (no /api/alm/sync echo).
+ * backendData: { projectId?, artifacts?: { prd?, architecture?, tasks? } }
+ */
+export function patchBackendIds(projectId, versionId, backendData) {
+  const projects = loadProjects();
+  const project = projects.find(p => p.id === projectId);
+  if (!project) return;
+  if (backendData.projectId) {
+    project._backend = { ...project._backend, projectId: backendData.projectId };
+  }
+  if (versionId && backendData.artifacts) {
+    const ver = project.versions.find(v => v.id === versionId);
+    if (ver) ver._backend = { ...ver._backend, ...backendData.artifacts };
+  }
+  persistLocal(projects);
 }
 
 // ── Insights ──────────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import * as store from '../store/almStore.js';
+import { syncVersionToBackend } from '../lib/syncVersionToBackend.js';
 
 export function useALM() {
   const [projects, setProjects] = useState(() => store.loadProjects());
@@ -49,6 +50,12 @@ export function useALM() {
     const result = store.saveNewVersion(proj.id, { ...forgeData, mode: forgeMode }, bumpType, links, note);
     refresh();
     setActiveProjectId(proj.id);
+    // Non-blocking backend sync — never throws to caller
+    if (result) {
+      syncVersionToBackend(result.project.id, result.version.id, forgeData).catch((err) => {
+        console.warn('[versioning] backend sync failed:', err.message);
+      });
+    }
     return result;
   }, [projects, refresh]);
 
@@ -56,6 +63,12 @@ export function useALM() {
     const result = store.saveNewVersion(projectId, { ...forgeData, mode: forgeMode }, bumpType, links, note);
     refresh();
     setActiveProjectId(projectId);
+    // Non-blocking backend sync — never throws to caller
+    if (result) {
+      syncVersionToBackend(result.project.id, result.version.id, forgeData).catch((err) => {
+        console.warn('[versioning] backend sync failed:', err.message);
+      });
+    }
     return result;
   }, [refresh]);
 
