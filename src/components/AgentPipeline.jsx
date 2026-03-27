@@ -1,33 +1,35 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Zap, CheckCircle2, Loader2, StopCircle, Send,
-  ChevronDown, ChevronUp, ArrowLeft,
-  AlertCircle, FileCheck2, PauseCircle, PlayCircle,
+  Zap, CheckCircle2, Loader2, StopCircle,
+  ArrowLeft, AlertCircle, FileCheck2, PauseCircle, PlayCircle,
   RotateCcw, MessageSquarePlus, X,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ThemeToggle from './ThemeToggle.jsx';
 import ProfileMenu from './ProfileMenu.jsx';
+import StackDecision from './StackDecision.jsx';
 
 const AGENT_DEFS = [
   { key: 'intent',       nameKey: 'agents.triage',      descKey: 'agents.triageDesc',      icon: '🔮', color: '#8B5CF6',  expectedChars: 6000 },
+  { key: 'brd',          nameKey: 'agents.scribe',      descKey: 'agents.scribeDesc',      icon: '📋', color: '#10B981',  expectedChars: 12000 },
   { key: 'architecture', nameKey: 'agents.drafthouse',  descKey: 'agents.drafthouseDesc',  icon: '⚙️', color: '#C2B0F6',  expectedChars: 7000 },
   { key: 'prd',          nameKey: 'agents.press',       descKey: 'agents.pressDesc',       icon: '📜', color: '#F5A83E',  expectedChars: 14000 },
   { key: 'techspec',     nameKey: 'agents.blueprint',   descKey: 'agents.blueprintDesc',   icon: '🔧', color: '#6366F1',  expectedChars: 14000 },
   { key: 'tasks',        nameKey: 'agents.mill',        descKey: 'agents.millDesc',        icon: '⚡', color: '#F59E0B',  expectedChars: 12000 },
 ];
 
-function AgentCard({ agent, agentName, agentDesc, status, streamText, elapsed, isExpanded, onToggle }) {
+/* ── Agent card (no streaming text) ────────────────────────────────── */
+function AgentCard({ agent, agentName, agentDesc, status, textLen, elapsed }) {
   const isRunning = status === 'running';
-  const isDone = status === 'done';
+  const isDone    = status === 'done';
   const isPending = status === 'pending';
-  const isPaused = status === 'paused';
+  const isPaused  = status === 'paused';
 
   const progress = isDone
     ? 100
     : isRunning
-    ? Math.min(Math.round((streamText.length / agent.expectedChars) * 100), 95)
+    ? Math.min(Math.round(((textLen || 0) / agent.expectedChars) * 100), 95)
     : 0;
 
   return (
@@ -39,10 +41,7 @@ function AgentCard({ agent, agentName, agentDesc, status, streamText, elapsed, i
         isRunning ? 'agent-running' : isDone ? 'agent-done' : ''
       }`}
     >
-      <div
-        className={`flex items-center gap-4 p-4 ${isDone && streamText ? 'cursor-pointer' : ''}`}
-        onClick={() => isDone && streamText && onToggle()}
-      >
+      <div className="flex items-center gap-4 p-4">
         <div
           className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 transition-all duration-300 ${isRunning ? 'agent-pulse' : ''}`}
           style={{
@@ -66,15 +65,9 @@ function AgentCard({ agent, agentName, agentDesc, status, streamText, elapsed, i
             <span className={`font-semibold text-sm ${(isPending || isPaused) ? 'text-slate-600' : 'text-white'}`}>
               {agentName}
             </span>
-            {isRunning && (
-              <span className="text-xs font-mono text-forge-purple animate-pulse">● Running</span>
-            )}
-            {isDone && (
-              <span className="text-xs font-mono text-[#F5A83E]">{elapsed}s</span>
-            )}
-            {isPaused && (
-              <span className="text-xs font-mono text-amber-400 opacity-70">paused</span>
-            )}
+            {isRunning && <span className="text-xs font-mono text-forge-purple animate-pulse">● Running</span>}
+            {isDone && <span className="text-xs font-mono text-[#F5A83E]">{elapsed}s</span>}
+            {isPaused && <span className="text-xs font-mono text-amber-400 opacity-70">paused</span>}
           </div>
           <div className={`text-xs mt-0.5 ${(isPending || isPaused) ? 'text-slate-700' : 'text-slate-500'}`}>
             {agentDesc}
@@ -96,30 +89,7 @@ function AgentCard({ agent, agentName, agentDesc, status, streamText, elapsed, i
             </div>
           )}
         </div>
-
-        <div className="flex items-center flex-shrink-0">
-          {isDone && streamText && (
-            isExpanded ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />
-          )}
-        </div>
       </div>
-
-      <AnimatePresence>
-        {(isRunning || isExpanded) && streamText && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="mx-4 mb-4 p-3 bg-slate-950/60 rounded-xl border border-slate-800/60">
-              <pre className={`stream-text max-h-48 overflow-y-auto ${isRunning ? 'cursor-blink' : ''}`}>
-                {streamText.slice(-2000)}
-              </pre>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {isRunning && (
         <div className="h-0.5 w-full relative overflow-hidden" style={{ background: `${agent.color}20` }}>
@@ -219,30 +189,35 @@ function FeedbackPanel({ completedCount, totalCount, onResume, onRestart, onCont
 
 /* ─── Main Component ────────────────────────────────────────────────── */
 export default function AgentPipeline({ input, files = [], mode, onComplete, onReset, onBack }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const AGENTS = AGENT_DEFS.map(a => ({ ...a, name: t(a.nameKey), desc: t(a.descKey) }));
+
   const initState = () => ({
-    intent:       { status: 'pending', text: '', elapsed: null },
-    architecture: { status: 'pending', text: '', elapsed: null },
-    prd:          { status: 'pending', text: '', elapsed: null },
-    techspec:     { status: 'pending', text: '', elapsed: null },
-    tasks:        { status: 'pending', text: '', elapsed: null },
+    intent:       { status: 'pending', textLen: 0, elapsed: null },
+    architecture: { status: 'pending', textLen: 0, elapsed: null },
+    prd:          { status: 'pending', textLen: 0, elapsed: null },
+    brd:          { status: 'pending', textLen: 0, elapsed: null },
+    techspec:     { status: 'pending', textLen: 0, elapsed: null },
+    tasks:        { status: 'pending', textLen: 0, elapsed: null },
   });
 
   const [agentStates, setAgentStates] = useState(initState);
   const [isStopped, setIsStopped]     = useState(false);
   const [isPaused, setIsPaused]       = useState(false);
   const [error, setError]             = useState(null);
-  const [expandedAgent, setExpandedAgent] = useState(null);
-  const [isDone, setIsDone]           = useState(false);
+  const [isDone, setIsDone]     = useState(false);
   const [resultsData, setResultsData] = useState(null);
 
-  // Run parameters — updated on resume
-  const runParamsRef = useRef({ resumeFrom: null, previousResults: {}, feedback: '' });
-  const [runCount, setRunCount]       = useState(0); // increment triggers re-run
+  // Two-phase state
+  const [awaitingStack, setAwaitingStack] = useState(false);
+  const [phase1Data, setPhase1Data]       = useState(null);
 
-  // Per-agent raw text captured as streaming completes
-  const agentTextRef  = useRef({ intent: '', architecture: '', prd: '', techspec: '', tasks: '' });
+  // Run parameters — updated on resume
+  const runParamsRef = useRef({ resumeFrom: null, previousResults: {}, feedback: '', stop_after: 'architecture', stack_decision: null });
+  const [runCount, setRunCount]       = useState(0);
+
+  // Per-agent raw text captured (not displayed, but passed to next agents)
+  const agentTextRef  = useRef({ intent: '', architecture: '', prd: '', brd: '', techspec: '', tasks: '' });
   const agentOutputRef = useRef({});
 
   const abortRef   = useRef(null);
@@ -257,12 +232,12 @@ export default function AgentPipeline({ input, files = [], mode, onComplete, onR
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const { resumeFrom, previousResults, feedback } = runParamsRef.current;
+    const { resumeFrom, previousResults, feedback, stop_after, stack_decision } = runParamsRef.current;
 
     fetch('/api/forge', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input, mode, files, resumeFrom, previousResults, feedback }),
+      body: JSON.stringify({ input, mode, files, resumeFrom, previousResults, feedback, language: i18n.language, stop_after, stack_decision }),
       signal: controller.signal,
     }).then(async (res) => {
       if (!res.ok) {
@@ -291,16 +266,18 @@ export default function AgentPipeline({ input, files = [], mode, onComplete, onR
 
             if (event.type === 'agent_start') {
               agentTextRef.current[event.agent] = '';
-              updateAgent(event.agent, { status: 'running', text: '' });
+              updateAgent(event.agent, { status: 'running', textLen: 0 });
             } else if (event.type === 'agent_text') {
               agentTextRef.current[event.agent] += event.text;
-              setAgentStates((prev) => ({
-                ...prev,
-                [event.agent]: { ...prev[event.agent], text: prev[event.agent].text + event.text },
-              }));
+              const len = agentTextRef.current[event.agent].length;
+              setAgentStates(prev => ({ ...prev, [event.agent]: { ...prev[event.agent], textLen: len } }));
             } else if (event.type === 'agent_done') {
               agentOutputRef.current[event.agent] = agentTextRef.current[event.agent];
               updateAgent(event.agent, { status: 'done', elapsed: event.elapsed });
+            } else if (event.type === 'phase1_complete') {
+              // Phase 1 done — show stack decision UI
+              setPhase1Data(event.data);
+              setAwaitingStack(true);
             } else if (event.type === 'results') {
               resultsRef.current = event.data;
               setResultsData(event.data);
@@ -319,6 +296,28 @@ export default function AgentPipeline({ input, files = [], mode, onComplete, onR
     return () => controller.abort();
   }, [runCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* ── Stack confirmed → launch Phase 2 ── */
+  const handleStackConfirmed = useCallback((stackDecision) => {
+    setAwaitingStack(false);
+    // Reset Phase 2 agents to pending
+    setAgentStates((prev) => ({
+      ...prev,
+      prd:      { status: 'pending', textLen: 0, elapsed: null },
+      techspec: { status: 'pending', textLen: 0, elapsed: null },
+      tasks:    { status: 'pending', textLen: 0, elapsed: null },
+    }));
+    runParamsRef.current = {
+      resumeFrom:      'prd',
+      previousResults: { ...agentOutputRef.current },
+      feedback:        '',
+      stop_after:      null,
+      stack_decision:  stackDecision,
+    };
+    setIsDone(false);
+    setError(null);
+    setRunCount((c) => c + 1);
+  }, []);
+
   /* ── Handlers ── */
   const handleStop = () => {
     abortRef.current?.abort();
@@ -332,7 +331,7 @@ export default function AgentPipeline({ input, files = [], mode, onComplete, onR
       const updated = { ...prev };
       Object.keys(updated).forEach((key) => {
         if (updated[key].status === 'running') {
-          updated[key] = { status: 'paused', text: '', elapsed: null };
+          updated[key] = { status: 'paused', textLen: 0, elapsed: null };
           agentTextRef.current[key] = '';
         } else if (updated[key].status === 'pending') {
           updated[key] = { ...updated[key], status: 'paused' };
@@ -352,7 +351,7 @@ export default function AgentPipeline({ input, files = [], mode, onComplete, onR
       const updated = { ...prev };
       AGENTS.forEach((a) => {
         if (updated[a.key].status !== 'done') {
-          updated[a.key] = { status: 'pending', text: '', elapsed: null };
+          updated[a.key] = { status: 'pending', textLen: 0, elapsed: null };
         }
       });
       return updated;
@@ -362,6 +361,8 @@ export default function AgentPipeline({ input, files = [], mode, onComplete, onR
       resumeFrom:      nextAgent?.key || null,
       previousResults: { ...agentOutputRef.current },
       feedback:        feedbackText,
+      stop_after:      runParamsRef.current.stop_after,
+      stack_decision:  runParamsRef.current.stack_decision,
     };
 
     setIsPaused(false);
@@ -372,22 +373,24 @@ export default function AgentPipeline({ input, files = [], mode, onComplete, onR
 
   const handleRestart = () => {
     abortRef.current?.abort();
-    agentTextRef.current  = { intent: '', architecture: '', prd: '', techspec: '', tasks: '' };
+    agentTextRef.current  = { intent: '', architecture: '', prd: '', brd: '', techspec: '', tasks: '' };
     agentOutputRef.current = {};
-    runParamsRef.current   = { resumeFrom: null, previousResults: {}, feedback: '' };
+    runParamsRef.current   = { resumeFrom: null, previousResults: {}, feedback: '', stop_after: 'architecture', stack_decision: null };
     setAgentStates(initState());
     setIsPaused(false);
     setIsStopped(false);
     setIsDone(false);
     setError(null);
     setResultsData(null);
+    setAwaitingStack(false);
+    setPhase1Data(null);
     setRunCount((c) => c + 1);
   };
 
   const completedCount = AGENTS.filter((a) => agentStates[a.key].status === 'done').length;
   const currentAgent   = AGENTS.find((a) => agentStates[a.key].status === 'running');
   const overallProgress = (completedCount / AGENTS.length) * 100;
-  const isRunning = !isDone && !isStopped && !isPaused && !error;
+  const isRunning = !isDone && !isStopped && !isPaused && !awaitingStack && !error;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -443,7 +446,7 @@ export default function AgentPipeline({ input, files = [], mode, onComplete, onR
         >
           <div className="flex items-center justify-between mb-3">
             <span className="font-semibold text-white text-sm">
-              {isPaused ? t('pipeline.paused') : isDone ? t('pipeline.done') : t('pipeline.processing')}
+              {isPaused ? t('pipeline.paused') : awaitingStack ? 'Choose Your Stack' : isDone ? t('pipeline.done') : t('pipeline.processing')}
             </span>
             <div className="flex items-center gap-2 text-sm">
               {currentAgent && (
@@ -489,14 +492,29 @@ export default function AgentPipeline({ input, files = [], mode, onComplete, onR
                 agentName={agent.name}
                 agentDesc={agent.desc}
                 status={state.status}
-                streamText={state.text}
+                textLen={state.textLen}
                 elapsed={state.elapsed}
-                isExpanded={expandedAgent === agent.key}
-                onToggle={() => setExpandedAgent((prev) => prev === agent.key ? null : agent.key)}
               />
             );
           })}
         </div>
+
+        {/* ── Stack Decision Checkpoint ── */}
+        <AnimatePresence>
+          {awaitingStack && phase1Data && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mt-2 mb-4"
+            >
+              <StackDecision
+                architectureData={phase1Data.architecture}
+                onConfirm={handleStackConfirmed}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ── Feedback / Pause Panel ── */}
         <AnimatePresence>
@@ -515,18 +533,6 @@ export default function AgentPipeline({ input, files = [], mode, onComplete, onR
             />
           )}
         </AnimatePresence>
-
-        {/* ── Inline feedback during run ── */}
-        {isRunning && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="mt-2"
-          >
-            <InlineFeedback onPauseWithFeedback={() => handlePause()} />
-          </motion.div>
-        )}
 
         {/* Error */}
         {error && (
@@ -610,49 +616,3 @@ export default function AgentPipeline({ input, files = [], mode, onComplete, onR
   );
 }
 
-/* ── Inline "pause & add feedback" hint during run ── */
-function InlineFeedback({ onPauseWithFeedback }) {
-  const { t } = useTranslation();
-  const [visible, setVisible] = useState(false);
-
-  if (!visible) {
-    return (
-      <button
-        onClick={() => setVisible(true)}
-        className="w-full py-2 text-xs text-[var(--text-subtle)] hover:text-[var(--accent-primary)]
-          border border-dashed border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/30
-          rounded-xl transition-all flex items-center justify-center gap-1.5"
-      >
-        <MessageSquarePlus className="w-3.5 h-3.5" />
-        {t('pipeline.steerOutput')}
-      </button>
-    );
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: 'auto' }}
-      className="glass-card p-4 border border-[var(--border-accent)]/20"
-    >
-      <p className="text-xs text-slate-500 mb-3">
-        Click <strong className="text-amber-400">{t('pipeline.pause')}</strong> in the nav bar to stop the pipeline at the current
-        step boundary and add corrections or new context before resuming.
-      </p>
-      <div className="flex gap-2">
-        <button
-          onClick={onPauseWithFeedback}
-          className="flex items-center gap-1.5 text-sm text-amber-400 hover:text-amber-300
-            hover:bg-amber-400/10 px-3 py-1.5 rounded-xl transition-all
-            border border-amber-400/20 hover:border-amber-400/40"
-        >
-          <PauseCircle className="w-3.5 h-3.5" />
-          {t('pipeline.pauseNow')}
-        </button>
-        <button onClick={() => setVisible(false)} className="text-xs text-slate-600 hover:text-slate-400 px-2 transition-colors">
-          {t('pipeline.dismiss')}
-        </button>
-      </div>
-    </motion.div>
-  );
-}
