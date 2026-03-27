@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Github, FolderOpen, FileArchive, Loader2, AlertCircle, ArrowRight, Zap } from 'lucide-react';
+import { Github, FolderOpen, FileArchive, Loader2, AlertCircle, ArrowRight, Zap, MessageSquare } from 'lucide-react';
 import RepoAnalysis from './RepoAnalysis.jsx';
 
 const METHODS = [
@@ -85,6 +85,7 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
   const [streamLog, setStreamLog] = useState([]);
   const [error, setError] = useState(null);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [additionalPrompt, setAdditionalPrompt] = useState('');
   const folderRef = useRef();
   const zipRef = useRef();
   const abortRef = useRef();
@@ -133,13 +134,6 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
               setStreamLog((prev) => [...prev, { type: 'repo_info', data: event }]);
             } else if (event.type === 'text') {
               rawText += event.text;
-              setStreamLog((prev) => {
-                const last = prev[prev.length - 1];
-                if (last?.type === 'stream') {
-                  return [...prev.slice(0, -1), { type: 'stream', text: last.text + event.text }];
-                }
-                return [...prev, { type: 'stream', text: event.text }];
-              });
             } else if (event.type === 'analysis_complete') {
               setAnalysisData(event.data);
             } else if (event.type === 'error') {
@@ -183,10 +177,10 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
     }
   };
 
-  const handleForgeWithAnalysis = () => {
-    if (analysisData?.auto_intent) {
-      onAnalysisComplete(analysisData);
-    }
+  const handleForgeWithAnalysis = (updatedData) => {
+    const data = updatedData || analysisData;
+    if (!data) return;
+    onAnalysisComplete({ ...data, additional_prompt: additionalPrompt.trim() });
   };
 
   const handleSkip = () => {
@@ -194,25 +188,39 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
   };
 
   return (
-    <div className="space-y-5">
-      {/* Method selector */}
-      <div className="grid grid-cols-3 gap-3">
-        {METHODS.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => { setMethod(m.id); setAnalysisData(null); setStreamLog([]); setError(null); }}
-            className={`flex flex-col items-center gap-2 py-4 px-3 rounded-xl border transition-all duration-200 text-center ${
-              method === m.id
-                ? 'border-opacity-60 text-white'
-                : 'border-slate-800 text-slate-500 hover:text-slate-300 hover:border-slate-700'
-            }`}
-            style={method === m.id ? { borderColor: m.color + '80', background: m.color + '12' } : {}}
-          >
-            <m.icon className="w-5 h-5" style={method === m.id ? { color: m.color } : {}} />
-            <span className="text-xs font-semibold">{m.label}</span>
-            <span className="text-xs opacity-60">{m.desc}</span>
-          </button>
-        ))}
+    <div className="space-y-3">
+      {/* Modernization intent + method selector in a compact combined layout */}
+      <div className="glass-card border border-forge-purple/20 overflow-hidden">
+        {/* Goals row */}
+        <div className="flex items-start gap-2 px-3 pt-3 pb-2 border-b border-slate-800/60">
+          <MessageSquare className="w-3.5 h-3.5 text-forge-purple flex-shrink-0 mt-1.5" />
+          <textarea
+            value={additionalPrompt}
+            onChange={(e) => setAdditionalPrompt(e.target.value)}
+            rows={2}
+            placeholder="Modernization goals — e.g. migrate to microservices, upgrade to React 18, improve performance..."
+            className="flex-1 bg-transparent resize-none outline-none text-sm leading-relaxed text-white placeholder-slate-600"
+          />
+        </div>
+
+        {/* Method selector — compact inline row */}
+        <div className="flex items-center gap-1 p-2">
+          {METHODS.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => { setMethod(m.id); setAnalysisData(null); setStreamLog([]); setError(null); }}
+              className={`flex items-center gap-1.5 flex-1 justify-center py-2 px-2 rounded-lg border transition-all duration-200 text-xs ${
+                method === m.id
+                  ? 'border-opacity-60 text-white'
+                  : 'border-slate-800 text-slate-500 hover:text-slate-300 hover:border-slate-700'
+              }`}
+              style={method === m.id ? { borderColor: m.color + '80', background: m.color + '12' } : {}}
+            >
+              <m.icon className="w-3.5 h-3.5" style={method === m.id ? { color: m.color } : {}} />
+              <span className="font-semibold">{m.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Input area */}
@@ -252,13 +260,15 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
             <button
               onClick={() => folderRef.current?.click()}
               disabled={analyzing}
-              className="w-full py-8 border-2 border-dashed border-slate-700 hover:border-forge-whisper/50 rounded-xl text-center transition-all group"
+              className="w-full py-4 border-2 border-dashed border-slate-700 hover:border-forge-whisper/50 rounded-xl text-center transition-all group flex items-center justify-center gap-3"
             >
-              <FolderOpen className="w-8 h-8 text-slate-600 group-hover:text-forge-whisper mx-auto mb-2 transition-colors" />
-              <div className="text-sm font-semibold text-slate-400 group-hover:text-slate-200">
-                {uploadedFiles.length > 0 ? `${uploadedFiles.length} files selected` : 'Click to browse folder'}
+              <FolderOpen className="w-5 h-5 text-slate-600 group-hover:text-forge-whisper transition-colors flex-shrink-0" />
+              <div className="text-left">
+                <div className="text-sm font-semibold text-slate-400 group-hover:text-slate-200">
+                  {uploadedFiles.length > 0 ? `${uploadedFiles.length} files selected` : 'Click to browse folder'}
+                </div>
+                <div className="text-xs text-slate-600">Selects all files recursively</div>
               </div>
-              <div className="text-xs text-slate-600 mt-1">Selects all files in the folder recursively</div>
             </button>
             <input ref={folderRef} type="file" webkitdirectory="" multiple className="hidden" onChange={handleFolderUpload} />
           </motion.div>
@@ -269,13 +279,15 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
             <button
               onClick={() => zipRef.current?.click()}
               disabled={analyzing}
-              className="w-full py-8 border-2 border-dashed border-slate-700 hover:border-forge-amber/50 rounded-xl text-center transition-all group"
+              className="w-full py-4 border-2 border-dashed border-slate-700 hover:border-forge-amber/50 rounded-xl text-center transition-all group flex items-center justify-center gap-3"
             >
-              <FileArchive className="w-8 h-8 text-slate-600 group-hover:text-forge-amber mx-auto mb-2 transition-colors" />
-              <div className="text-sm font-semibold text-slate-400 group-hover:text-slate-200">
-                {uploadedFiles.length > 0 ? uploadedFiles[0].name : 'Click to upload ZIP file'}
+              <FileArchive className="w-5 h-5 text-slate-600 group-hover:text-forge-amber transition-colors flex-shrink-0" />
+              <div className="text-left">
+                <div className="text-sm font-semibold text-slate-400 group-hover:text-slate-200">
+                  {uploadedFiles.length > 0 ? uploadedFiles[0].name : 'Click to upload ZIP file'}
+                </div>
+                <div className="text-xs text-slate-600">Extracts and analyzes automatically</div>
               </div>
-              <div className="text-xs text-slate-600 mt-1">Automatically extracts and analyzes your codebase</div>
             </button>
             <input ref={zipRef} type="file" accept=".zip" className="hidden" onChange={handleZipUpload} />
           </motion.div>
@@ -301,7 +313,7 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
           >
             <div className="flex items-center gap-2 mb-3">
               <Loader2 className="w-4 h-4 text-forge-purple animate-spin" />
-              <span className="text-sm font-semibold text-forge-purple">AI Analysis Running</span>
+              <span className="text-sm font-semibold text-forge-purple">Forge Analysis Running</span>
             </div>
             <div className="space-y-1.5 max-h-40 overflow-y-auto">
               {streamLog.map((log, i) => (
@@ -316,9 +328,6 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
                     <div className="text-xs text-forge-whisper">
                       ✓ Connected: {log.data.owner}/{log.data.repo} · {log.data.files_fetched} files fetched
                     </div>
-                  )}
-                  {log.type === 'stream' && (
-                    <pre className="text-xs text-slate-600 font-mono whitespace-pre-wrap line-clamp-3">{log.text.slice(-400)}</pre>
                   )}
                 </div>
               ))}
