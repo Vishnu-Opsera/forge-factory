@@ -195,7 +195,7 @@ function SemanticLayers({ layers }) {
 // ── Main component ────────────────────────────────────────────────────────────
 export default function ArchitectureTab({ data: rawData }) {
   // If data is a string, try to parse it as JSON first
-  const data = typeof rawData === 'string' ? (tryParseArch(rawData) || rawData) : rawData;
+  let data = typeof rawData === 'string' ? (tryParseArch(rawData) || rawData) : rawData;
 
   // String fallback — extract mermaid if possible
   if (!data || typeof data === 'string') {
