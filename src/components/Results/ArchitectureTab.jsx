@@ -234,7 +234,7 @@ export default function ArchitectureTab({ data: rawData }) {
               </span>
             )}
           </div>
-          <MermaidDiagram diagram={arch.mermaid} />
+          <MermaidDiagram diagram={data.mermaid} />
         </motion.div>
       )}
 
@@ -272,7 +272,8 @@ export default function ArchitectureTab({ data: rawData }) {
         </motion.div>
       )}
 
-      {arch.key_decisions?.length > 0 && (
+      {/* Key decisions */}
+      {data.key_decisions?.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-6">
           <h3 className="font-semibold text-white text-sm mb-4 flex items-center gap-2">
             <Server className="w-4 h-4 text-forge-amber" />Architectural Decisions
@@ -311,15 +312,4 @@ export default function ArchitectureTab({ data: rawData }) {
       )}
     </div>
   );
-}
-
-// ── Main component ────────────────────────────────────────────────────────────
-export default function ArchitectureTab({ data }) {
-  const arch = coerce(data);
-
-  if (!arch) {
-    return <div className="glass-card p-6"><pre className="stream-text whitespace-pre-wrap">No architecture data</pre></div>;
-  }
-
-  return <ArchContent arch={arch} />;
 }
