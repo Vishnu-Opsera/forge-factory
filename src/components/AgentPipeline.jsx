@@ -227,73 +227,114 @@ export default function AgentPipeline({ input, files = [], mode, onComplete, onR
     setAgentStates((prev) => ({ ...prev, [key]: { ...prev[key], ...updates } }));
   }, []);
 
-  /* ── SSE runner ── */
+  /* ── Simulated pipeline runner ── */
   useEffect(() => {
-    const controller = new AbortController();
-    abortRef.current = controller;
+    let cancelled = false;
+    abortRef.current = { abort: () => { cancelled = true; } };
 
-    const { resumeFrom, previousResults, feedback, stop_after, stack_decision } = runParamsRef.current;
+    const MOCK_AGENT_TEXT = {
+      intent: `Analyzing product concept and extracting structured intent...\n\nIdentifying core user personas and their primary jobs-to-be-done.\nMapping feature requirements against business objectives.\nEstimating complexity: medium — 3-6 month MVP timeline.\n\nCore features identified:\n• User authentication & onboarding flow\n• Dashboard with real-time data visualization\n• Collaboration & sharing capabilities\n• Notification system (in-app + email)\n• Admin panel for user management\n• API integrations with third-party services\n\nComplexity factors: data pipeline, real-time updates, multi-tenant architecture.\nRecommended approach: iterative delivery, start with core loop.\n\n✓ Intent extraction complete`,
+      brd: `# Business Requirements Document\n\n## Business Context\nThe organization needs a unified platform to reduce tool sprawl and improve delivery velocity.\n\n## Stakeholders\n- Product: defines roadmap and prioritization\n- Engineering: implements and maintains\n- Finance: tracks ROI and licensing costs\n\n## Business Goals\n1. Reduce time-to-market by 30% within 6 months\n2. Consolidate 4 existing tools into 1 platform\n3. Improve cross-team visibility\n\n## Constraints\n- Budget: $150k for initial build\n- Timeline: MVP in 16 weeks\n- Compliance: SOC 2 Type I required at launch\n\n## Success Criteria\n- 80% team adoption within 30 days of launch\n- Support ticket volume reduced by 40%\n\n✓ BRD complete`,
+      architecture: `Designing system architecture based on extracted intent...\n\nEvaluating architecture patterns: microservices vs modular monolith.\nRecommendation: modular monolith for MVP, extract services as needed.\n\nTech stack selection:\n  Frontend: React 18, TypeScript, Tailwind CSS, Vite\n  Backend: Node.js, Express, TypeScript\n  Database: PostgreSQL (primary), Redis (cache/sessions)\n  Auth: JWT + refresh tokens, OAuth2 (Google, GitHub)\n  Infra: Docker, AWS ECS or Railway for deployment\n  CI/CD: GitHub Actions\n\nKey architectural decisions:\n• REST API with OpenAPI spec\n• Event-driven updates via WebSockets\n• Row-level security in PostgreSQL\n• CDN for static assets\n\n✓ Architecture design complete`,
+      prd: `# Product Requirements Document\n\n## Executive Summary\nA modern SaaS platform designed to streamline team workflows and boost productivity through intelligent automation and real-time collaboration.\n\n## Product Vision\nEmpower teams to ship faster by removing friction from their daily workflows.\n\n## User Personas\n\n### Primary: Product Manager\n- Needs: visibility into team progress, stakeholder reporting\n- Pain points: manual status updates, scattered information\n\n### Secondary: Developer\n- Needs: clear requirements, automated workflows\n- Pain points: context switching, unclear priorities\n\n## Core Features\n\n### F1: Authentication & User Management\n- Email/password and OAuth2 login\n- Role-based access control (Admin, Editor, Viewer)\n- Team invitations via email\n\n### F2: Dashboard\n- Real-time activity feed\n- Key metrics overview cards\n- Customizable widget layout\n\n### F3: Collaboration\n- Comments and @mentions\n- Shared workspaces\n- Activity history\n\n## Success Metrics\n- Time to first value: < 5 minutes\n- DAU/MAU ratio: > 40%\n- NPS score: > 50\n\n✓ PRD complete`,
+      techspec: `# Technical Specification\n\n## System Architecture\n\n### Frontend\n- React 18 SPA with TypeScript\n- State management: Zustand\n- Data fetching: TanStack Query\n- Forms: React Hook Form + Zod validation\n- Component library: custom + Radix UI primitives\n\n### Backend API\n- Node.js + Express + TypeScript\n- Validation: Zod middleware\n- Auth: passport-jwt, express-session\n- Rate limiting: express-rate-limit\n- Logging: pino\n\n### Database Schema (key tables)\n- users (id, email, name, role, created_at)\n- organizations (id, name, plan, settings)\n- memberships (user_id, org_id, role)\n- items (id, org_id, owner_id, title, status, metadata)\n- comments (id, item_id, author_id, body, created_at)\n\n### API Endpoints\n- POST /auth/register\n- POST /auth/login\n- GET /api/users/me\n- GET/POST /api/items\n- PATCH /api/items/:id\n- GET /api/dashboard/metrics\n\n### Security\n- HTTPS only, HSTS enabled\n- CORS restricted to known origins\n- SQL injection prevention via parameterized queries\n- XSS prevention via CSP headers\n\n✓ Tech spec complete`,
+      tasks: `# Sprint Tasks\n\n## Epic 1: Foundation (Sprint 1-2)\n- [ ] Project scaffolding and CI/CD pipeline\n- [ ] Database schema and migrations\n- [ ] Authentication API (register, login, refresh)\n- [ ] Auth UI (login, register, forgot password)\n- [ ] Base layout and navigation shell\n\n## Epic 2: Core Features (Sprint 3-4)\n- [ ] Dashboard page with metric cards\n- [ ] Item creation and listing\n- [ ] Item detail view and editing\n- [ ] Real-time updates via WebSocket\n- [ ] Basic search and filtering\n\n## Epic 3: Collaboration (Sprint 5)\n- [ ] Comments system\n- [ ] @mention notifications\n- [ ] Team invitation flow\n- [ ] Activity feed\n\n## Epic 4: Polish & Launch (Sprint 6)\n- [ ] Onboarding flow\n- [ ] Email notifications (SendGrid)\n- [ ] Admin panel\n- [ ] Performance optimization\n- [ ] Production deployment & monitoring\n\nTotal: 42 story points across 4 epics\n✓ Task breakdown complete`,
+    };
 
-    fetch('/api/forge', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input, mode, files, resumeFrom, previousResults, feedback, language: i18n.language, stop_after, stack_decision }),
-      signal: controller.signal,
-    }).then(async (res) => {
-      if (!res.ok) {
-        const err = await res.json();
-        setError(err.error || 'API error');
-        return;
-      }
+    const MOCK_RESULTS = {
+      intent: {
+        concept: input || 'A modern SaaS platform for team collaboration and workflow automation',
+        core_features: [
+          { name: 'Authentication & User Management', description: 'OAuth2 + email login, RBAC', priority: 'high' },
+          { name: 'Dashboard', description: 'Real-time metrics and activity feed', priority: 'high' },
+          { name: 'Collaboration Tools', description: 'Comments, mentions, shared workspaces', priority: 'medium' },
+          { name: 'Notifications', description: 'In-app and email notification system', priority: 'medium' },
+          { name: 'Admin Panel', description: 'User and organization management', priority: 'low' },
+        ],
+        complexity: 'medium',
+        estimated_timeline: '4-6 months',
+      },
+      architecture: {
+        tech_stack: {
+          frontend: ['React 18', 'TypeScript', 'Tailwind CSS', 'Vite', 'TanStack Query'],
+          backend: ['Node.js', 'Express', 'TypeScript', 'Zod'],
+          database: ['PostgreSQL', 'Redis'],
+          infrastructure: ['Docker', 'AWS ECS', 'GitHub Actions'],
+        },
+        patterns: ['Modular Monolith', 'REST API', 'WebSockets', 'Event-Driven'],
+      },
+      prd: MOCK_AGENT_TEXT.prd,
+      techspec: MOCK_AGENT_TEXT.techspec,
+      tasks: {
+        total_points: 42,
+        epics: [
+          {
+            id: 'epic_1', title: 'Foundation', color: '#8B5CF6',
+            stories: [
+              { id: 'story_1', title: 'Project scaffolding & CI/CD', story_points: 5, acceptance_criteria: ['Repo initialized', 'CI pipeline running', 'Deployment working'] },
+              { id: 'story_2', title: 'Database schema & migrations', story_points: 5, acceptance_criteria: ['Schema defined', 'Migrations run cleanly'] },
+              { id: 'story_3', title: 'Authentication API', story_points: 8, acceptance_criteria: ['Register endpoint', 'Login endpoint', 'JWT refresh'] },
+              { id: 'story_4', title: 'Auth UI', story_points: 5, acceptance_criteria: ['Login page', 'Register page', 'Forgot password'] },
+            ],
+          },
+          {
+            id: 'epic_2', title: 'Core Features', color: '#F5A83E',
+            stories: [
+              { id: 'story_5', title: 'Dashboard with metric cards', story_points: 8, acceptance_criteria: ['Metrics display', 'Real-time updates'] },
+              { id: 'story_6', title: 'Item CRUD', story_points: 5, acceptance_criteria: ['Create', 'Read', 'Update', 'Delete'] },
+              { id: 'story_7', title: 'Search and filtering', story_points: 3, acceptance_criteria: ['Text search', 'Status filter'] },
+            ],
+          },
+          {
+            id: 'epic_3', title: 'Collaboration', color: '#6366F1',
+            stories: [
+              { id: 'story_8', title: 'Comments system', story_points: 5, acceptance_criteria: ['Add comment', 'Edit comment', 'Delete comment'] },
+              { id: 'story_9', title: 'Team invitations', story_points: 3, acceptance_criteria: ['Invite by email', 'Accept/decline'] },
+            ],
+          },
+        ],
+      },
+    };
 
-      const reader  = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer    = '';
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
+    const { resumeFrom } = runParamsRef.current;
+    const startIdx = resumeFrom ? AGENT_DEFS.findIndex(a => a.key === resumeFrom) : 0;
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const raw = line.slice(6).trim();
-          if (!raw) continue;
-          try {
-            const event = JSON.parse(raw);
+    async function simulate() {
+      for (const agent of AGENT_DEFS.slice(startIdx < 0 ? 0 : startIdx)) {
+        if (cancelled) return;
 
-            if (event.type === 'agent_start') {
-              agentTextRef.current[event.agent] = '';
-              updateAgent(event.agent, { status: 'running', textLen: 0 });
-            } else if (event.type === 'agent_text') {
-              agentTextRef.current[event.agent] += event.text;
-              const len = agentTextRef.current[event.agent].length;
-              setAgentStates(prev => ({ ...prev, [event.agent]: { ...prev[event.agent], textLen: len } }));
-            } else if (event.type === 'agent_done') {
-              agentOutputRef.current[event.agent] = agentTextRef.current[event.agent];
-              updateAgent(event.agent, { status: 'done', elapsed: event.elapsed });
-            } else if (event.type === 'phase1_complete') {
-              // Phase 1 done — show stack decision UI
-              setPhase1Data(event.data);
-              setAwaitingStack(true);
-            } else if (event.type === 'results') {
-              resultsRef.current = event.data;
-              setResultsData(event.data);
-            } else if (event.type === 'done') {
-              setIsDone(true);
-            } else if (event.type === 'error') {
-              setError(event.message);
-            }
-          } catch {}
+        agentTextRef.current[agent.key] = '';
+        updateAgent(agent.key, { status: 'running', textLen: 0 });
+
+        const fullText = MOCK_AGENT_TEXT[agent.key];
+        const chunkSize = 12;
+        const chunkDelay = 18;
+
+        for (let i = 0; i < fullText.length; i += chunkSize) {
+          if (cancelled) return;
+          await sleep(chunkDelay);
+          agentTextRef.current[agent.key] += fullText.slice(i, i + chunkSize);
+          const len = agentTextRef.current[agent.key].length;
+          setAgentStates((prev) => ({ ...prev, [agent.key]: { ...prev[agent.key], textLen: len } }));
         }
-      }
-    }).catch((err) => {
-      if (err.name !== 'AbortError') setError(err.message);
-    });
 
-    return () => controller.abort();
+        if (cancelled) return;
+        agentOutputRef.current[agent.key] = agentTextRef.current[agent.key];
+        const elapsed = (1.5 + Math.random() * 3).toFixed(1);
+        updateAgent(agent.key, { status: 'done', elapsed });
+        await sleep(200);
+      }
+
+      if (cancelled) return;
+      resultsRef.current = MOCK_RESULTS;
+      setResultsData(MOCK_RESULTS);
+      setIsDone(true);
+    }
+
+    simulate();
+    return () => { cancelled = true; };
   }, [runCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Stack confirmed → launch Phase 2 ── */

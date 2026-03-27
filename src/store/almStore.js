@@ -96,7 +96,6 @@ export function loadProjects() {
 
 function persist(projects) {
   localStorage.setItem(KEY, JSON.stringify(projects));
-  fetch('/api/alm/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projects }) }).catch(() => {});
 }
 
 // Local-only persist — used by inbound server sync to avoid echo loop

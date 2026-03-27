@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Github, FolderOpen, FileArchive, Loader2, AlertCircle, ArrowRight, Zap, MessageSquare } from 'lucide-react';
+import { Github, FolderOpen, FileArchive, Loader2, AlertCircle, Zap, MessageSquare } from 'lucide-react';
 import RepoAnalysis from './RepoAnalysis.jsx';
 
 const METHODS = [
@@ -9,73 +9,6 @@ const METHODS = [
   { id: 'zip', icon: FileArchive, label: 'ZIP File', desc: 'Upload a .zip archive', color: '#F5A83E' },
 ];
 
-const RELEVANT_EXTENSIONS = new Set([
-  'json', 'xml', 'gradle', 'toml', 'txt', 'md', 'rst',
-  'yml', 'yaml', 'properties', 'env', 'cfg', 'ini', 'conf',
-  'dockerfile', 'makefile',
-  'js', 'jsx', 'ts', 'tsx', 'mjs', 'cjs',
-  'py', 'java', 'go', 'rs', 'rb', 'php', 'cs', 'cpp', 'c', 'h',
-  'sql', 'graphql', 'gql', 'proto',
-  'sh', 'bash', 'zsh',
-  'tf', 'tfvars', 'bicep', 'hcl',
-]);
-
-const PRIORITY_FILES = new Set([
-  'package.json', 'pom.xml', 'build.gradle', 'requirements.txt', 'go.mod', 'cargo.toml',
-  'dockerfile', 'docker-compose.yml', 'docker-compose.yaml', 'readme.md', '.env.example',
-  'tsconfig.json', 'angular.json', 'next.config.js', 'vite.config.js', 'webpack.config.js',
-  'application.yml', 'application.properties', 'makefile',
-]);
-
-function isRelevantFile(path) {
-  const name = path.split('/').pop().toLowerCase();
-  const ext = name.split('.').pop();
-  if (PRIORITY_FILES.has(name)) return true;
-  if (RELEVANT_EXTENSIONS.has(ext)) return true;
-  return false;
-}
-
-async function extractFilesFromFolder(fileList) {
-  const files = [];
-  const sorted = Array.from(fileList).sort((a, b) => {
-    const aPriority = PRIORITY_FILES.has(a.name.toLowerCase()) ? 0 : 1;
-    const bPriority = PRIORITY_FILES.has(b.name.toLowerCase()) ? 0 : 1;
-    return aPriority - bPriority;
-  });
-
-  for (const file of sorted.slice(0, 50)) {
-    if (!isRelevantFile(file.name) && !isRelevantFile(file.webkitRelativePath || file.name)) continue;
-    if (file.size > 200000) continue; // skip files > 200KB
-    try {
-      const content = await file.text();
-      files.push({ path: file.webkitRelativePath || file.name, content: content.slice(0, 3000) });
-    } catch {}
-  }
-  return files;
-}
-
-async function extractFilesFromZip(file) {
-  const JSZip = (await import('jszip')).default;
-  const zip = await JSZip.loadAsync(file);
-  const files = [];
-
-  const entries = Object.entries(zip.files)
-    .filter(([path, entry]) => !entry.dir && isRelevantFile(path))
-    .sort(([a], [b]) => {
-      const ap = PRIORITY_FILES.has(a.split('/').pop().toLowerCase()) ? 0 : 1;
-      const bp = PRIORITY_FILES.has(b.split('/').pop().toLowerCase()) ? 0 : 1;
-      return ap - bp;
-    })
-    .slice(0, 50);
-
-  for (const [path, entry] of entries) {
-    try {
-      const content = await entry.async('text');
-      files.push({ path, content: content.slice(0, 3000) });
-    } catch {}
-  }
-  return files;
-}
 
 export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
   const [method, setMethod] = useState('github');
@@ -90,91 +23,75 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
   const zipRef = useRef();
   const abortRef = useRef();
 
-  const startSSEAnalysis = async (endpoint, body) => {
+  const runMockAnalysis = async (source, repoName) => {
     setAnalyzing(true);
     setAnalysisData(null);
     setStreamLog([]);
     setError(null);
 
-    const controller = new AbortController();
-    abortRef.current = controller;
+    let cancelled = false;
+    abortRef.current = { abort: () => { cancelled = true; } };
 
-    try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Analysis failed');
-      }
+    const MOCK_ANALYSIS = {
+      auto_intent: `Modernize ${repoName || 'this legacy application'} — migrate from the existing monolithic architecture to a modular, cloud-native design with improved scalability, maintainability, and developer experience.`,
+      repo_name: repoName || 'legacy-app',
+      tech_stack: {
+        languages: ['JavaScript', 'HTML', 'CSS'],
+        frameworks: ['Express', 'jQuery'],
+      },
+      code_quality: 'Fair — inconsistent patterns, minimal test coverage',
+      complexity: 'High',
+      issues: [
+        { issue: 'No test coverage' },
+        { issue: 'Tightly coupled modules' },
+        { issue: 'No CI/CD pipeline' },
+      ],
+    };
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let rawText = '';
+    const steps = [
+      { type: 'status', msg: 'Connecting to repository...' },
+      { type: 'repo_info', owner: repoName?.split('/')[0] || 'org', repo: repoName?.split('/')[1] || 'repo', files_fetched: 24 },
+      { type: 'status', msg: 'Scanning project structure...' },
+      { type: 'stream', text: 'Analyzing package.json, README.md, and source files...\n' },
+      { type: 'status', msg: 'Identifying tech stack...' },
+      { type: 'stream', text: 'Detected: Node.js + Express backend, jQuery frontend, PostgreSQL database.\n' },
+      { type: 'status', msg: 'Evaluating code quality...' },
+      { type: 'stream', text: 'Found 0% test coverage, 12 TODO comments, no linting configuration.\n' },
+      { type: 'status', msg: 'Generating modernization plan...' },
+      { type: 'stream', text: 'Recommending: TypeScript migration, React frontend, automated testing, containerization.\n' },
+    ];
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-            if (event.type === 'status') {
-              setStreamLog((prev) => [...prev, { type: 'status', msg: event.message }]);
-            } else if (event.type === 'repo_info') {
-              setStreamLog((prev) => [...prev, { type: 'repo_info', data: event }]);
-            } else if (event.type === 'text') {
-              rawText += event.text;
-            } else if (event.type === 'analysis_complete') {
-              setAnalysisData(event.data);
-            } else if (event.type === 'error') {
-              setError(event.message);
-            }
-          } catch {}
-        }
-      }
-    } catch (err) {
-      if (err.name !== 'AbortError') setError(err.message);
-    } finally {
-      setAnalyzing(false);
+    for (const step of steps) {
+      if (cancelled) { setAnalyzing(false); return; }
+      await sleep(350);
+      setStreamLog((prev) => [...prev, step]);
     }
+
+    if (cancelled) { setAnalyzing(false); return; }
+    await sleep(500);
+    setAnalysisData(MOCK_ANALYSIS);
+    setAnalyzing(false);
   };
 
   const handleGitHub = () => {
     if (!githubUrl.trim()) return;
-    startSSEAnalysis('/api/analyze-github', { url: githubUrl.trim() });
+    runMockAnalysis('github', githubUrl.trim().replace('https://github.com/', ''));
   };
 
   const handleFolderUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     setUploadedFiles(files);
-    const extracted = await extractFilesFromFolder(files);
-    startSSEAnalysis('/api/analyze-code', { files: extracted, source: 'folder' });
+    runMockAnalysis('folder');
   };
 
   const handleZipUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadedFiles([file]);
-    setStreamLog([{ type: 'status', msg: `Extracting ${file.name}...` }]);
-    setAnalyzing(true);
-    try {
-      const extracted = await extractFilesFromZip(file);
-      startSSEAnalysis('/api/analyze-code', { files: extracted, source: `zip: ${file.name}` });
-    } catch (err) {
-      setError('Failed to extract ZIP: ' + err.message);
-      setAnalyzing(false);
-    }
+    runMockAnalysis('zip', file.name.replace('.zip', ''));
   };
 
   const handleForgeWithAnalysis = (updatedData) => {
@@ -326,7 +243,7 @@ export default function LegacyInput({ onAnalysisComplete, onSkipToForge }) {
                   )}
                   {log.type === 'repo_info' && (
                     <div className="text-xs text-forge-whisper">
-                      ✓ Connected: {log.data.owner}/{log.data.repo} · {log.data.files_fetched} files fetched
+                      ✓ Connected: {log.owner}/{log.repo} · {log.files_fetched} files fetched
                     </div>
                   )}
                 </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Copy, Check, Terminal, RefreshCw, Zap, Circle, Clock, GitPullRequest, CheckCircle2 } from 'lucide-react';
 
@@ -36,14 +36,14 @@ const STATUS_META = {
   completed:     { label: 'Completed', color: '#F5A83E', icon: CheckCircle2 },
 };
 
-export default function ConnectIDEPanel({ project, versions }) {
-  const [apiKey, setApiKey] = useState(null);
-  const [serverPath, setServerPath] = useState('');
-  const [synced, setSynced] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('cursor');
+function mockApiKey(projectId) {
+  return `fk_${(projectId || 'demo').slice(-8)}_${'x'.repeat(24).replace(/x/g, () => Math.random().toString(36)[2])}`;
+}
 
-  const latestVersion = versions[versions.length - 1];
+export default function ConnectIDEPanel({ project, versions }) {
+  const [apiKey, setApiKey] = useState(() => project?.id ? mockApiKey(project.id) : null);
+  const serverPath = './mcp-server.js';
+  const [activeTab, setActiveTab] = useState('cursor');
 
   // Count story statuses
   const storyCounts = { not_developed: 0, in_progress: 0, in_review: 0, completed: 0 };
@@ -53,31 +53,9 @@ export default function ConnectIDEPanel({ project, versions }) {
     }
   }
 
-  const fetchKey = useCallback(async () => {
+  const regenerateKey = () => {
     if (!project?.id) return;
-    setLoading(true);
-    try {
-      const res = await fetch('/api/mcp/keys', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: project.id, projectName: project.name }),
-      });
-      const data = await res.json();
-      setApiKey(data.key);
-    } catch {}
-    setLoading(false);
-  }, [project]);
-
-  useEffect(() => {
-    fetchKey();
-    fetch('/api/alm/server-path').then(r => r.json()).then(d => setServerPath(d.path)).catch(() => {});
-    fetch('/api/alm/projects').then(r => r.ok ? setSynced(true) : setSynced(false)).catch(() => setSynced(false));
-  }, [fetchKey]);
-
-  const regenerateKey = async () => {
-    if (!project?.id) return;
-    await fetch(`/api/mcp/keys/${project.id}`, { method: 'DELETE' });
-    fetchKey();
+    setApiKey(mockApiKey(project.id));
   };
 
   const MCP_SERVER_URL = 'http://localhost:3001/mcp';
@@ -121,9 +99,9 @@ export default function ConnectIDEPanel({ project, versions }) {
       </div>
 
       {/* Sync status */}
-      <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm ${synced ? 'border-[#F5A83E]/20 bg-[#F5A83E]/5 text-[#F5A83E]' : 'border-amber-500/20 bg-amber-500/5 text-amber-400'}`}>
-        <div className={`w-2 h-2 rounded-full ${synced ? 'bg-forge-amber animate-pulse' : 'bg-amber-400'}`} />
-        {synced ? 'Server sync active — MCP can read your project data' : 'Server offline — start the dev server to enable MCP'}
+      <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm border-amber-500/20 bg-amber-500/5 text-amber-400">
+        <div className="w-2 h-2 rounded-full bg-amber-400" />
+        Server offline — start the dev server to enable MCP
       </div>
 
       {/* Story status overview */}
@@ -152,14 +130,10 @@ export default function ConnectIDEPanel({ project, versions }) {
             <RefreshCw className="w-3 h-3" />Regenerate
           </button>
         </div>
-        {loading ? (
-          <div className="h-9 bg-slate-800/50 rounded-lg animate-pulse" />
-        ) : (
-          <div className="flex items-center gap-2 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2">
-            <code className="flex-1 text-xs font-mono text-forge-whisper truncate">{apiKey}</code>
-            <CopyButton text={apiKey || ''} />
-          </div>
-        )}
+        <div className="flex items-center gap-2 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2">
+          <code className="flex-1 text-xs font-mono text-forge-whisper truncate">{apiKey}</code>
+          <CopyButton text={apiKey || ''} />
+        </div>
       </div>
 
       {/* IDE Config tabs */}

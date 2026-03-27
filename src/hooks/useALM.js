@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import * as store from '../store/almStore.js';
 
 export function useALM() {
@@ -6,36 +6,6 @@ export function useALM() {
   const [activeProjectId, setActiveProjectId] = useState(() => store.loadProjects()[0]?.id || null);
 
   const refresh = useCallback(() => setProjects(store.loadProjects()), []);
-
-  // Poll server every 3s for MCP-originated status changes
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch('/api/alm/projects');
-        if (!res.ok) return;
-        const serverProjects = await res.json();
-        const local = store.loadProjects();
-        let changed = false;
-        for (const sp of serverProjects) {
-          const lp = local.find(p => p.id === sp.id);
-          if (!lp) continue;
-          for (const sv of sp.versions) {
-            const lv = lp.versions.find(v => v.id === sv.id);
-            if (!lv) continue;
-            for (const [storyId, serverSt] of Object.entries(sv.story_statuses || {})) {
-              const localSt = lv.story_statuses?.[storyId];
-              if (localSt?.status !== serverSt.status || localSt?.notes !== serverSt.notes) {
-                store.updateStoryStatusLocal(lp.id, lv.id, storyId, serverSt.status, serverSt.notes);
-                changed = true;
-              }
-            }
-          }
-        }
-        if (changed) refresh();
-      } catch {}
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [refresh]);
 
   const activeProject = projects.find(p => p.id === activeProjectId) || projects[0] || null;
   const versions = activeProject?.versions || [];
